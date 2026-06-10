@@ -1,0 +1,209 @@
+// Level 2 - system panel (unfolds under the system button). Best-shot v1:
+// OS logo + kernel, CPU/RAM/GPU usage+temp, active window, tray (scrollbar).
+// Theme-driven via `skin` (Skin resolver - NOT "pal", see the Level1Bar trap).
+
+import QtQuick
+import Quickshell
+import Quickshell.Services.SystemTray
+
+Column {
+    id: sp
+    property var skin
+    property var hostWin: null  // the PanelWindow - needed to anchor tray context menus.
+                                // NOTE: must NOT be named "win" - that shadows the root id `win`
+                                // (the binding `win: win` would self-reference -> null). Old trap.
+    property int cpu: -1
+    property int ram: -1
+    property int gpu: -1
+    property int cpuTemp: -1
+    property int gpuTemp: -1
+    property int bat: -1         // laptop battery %, -1 = no battery (desktop) -> indicator hidden
+    property bool batCharging: false
+    // Font Awesome battery glyph by level: full / three-quarters / half / quarter / empty
+    readonly property int batGlyph: bat >= 90 ? 0xf240 : bat >= 65 ? 0xf241
+                                  : bat >= 40 ? 0xf242 : bat >= 15 ? 0xf243 : 0xf244
+    readonly property color batColor: (bat >= 0 && bat <= 15 && !batCharging) ? "#ff5555"
+                                    : batCharging ? "#7cfc72" : sp.fg
+    property string kernel: ""
+    property string osName: "Linux"
+    property string activeApp: ""
+
+    readonly property color fg: skin ? skin.text : "#ffffff"
+    readonly property color ac: skin ? skin.accent : "#ffffff"
+    readonly property color dim: Qt.rgba(fg.r, fg.g, fg.b, 0.55)
+    readonly property string fam: skin ? skin.fontFamily : "Poppins"
+
+    width: 320
+    spacing: 9
+
+    function usageColor(v) {
+        if (v < 0) return sp.dim;
+        if (v > 88) return "#ff5555";
+        if (v > 65) return "#ffb454";
+        return sp.ac;
+    }
+    // accent sampled from the rolling rainbow band at a global x (solid accent when rainbow off)
+    function acAt(px) { return sp.skin ? sp.skin.bandAt(px) : sp.ac; }
+
+    // Open a tray item's context menu, anchored to the window just below the icon.
+    function openTrayMenu(item, anchorItem) {
+        if (!item.hasMenu || !sp.hostWin) return;
+        sp.hostWin.holdHubOpen();   // keep the hub open while the menu is up
+        item.display(sp.hostWin,
+            anchorItem.mapToItem(null, 0, 0).x,
+            anchorItem.mapToItem(null, 0, anchorItem.height).y);
+    }
+
+    // ---- Header: OS logo + name + kernel  (battery right-aligned, laptop only) ----
+    Item {
+        width: sp.width
+        height: hdrLeft.height
+        Row {
+            id: hdrLeft
+            spacing: 10
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: String.fromCharCode(0xf303)   // Arch logo (Nerd Font)
+                font.family: "Symbols Nerd Font"; font.pixelSize: 26
+                color: sp.acAt(mapToItem(null, width / 2, 0).x)
+            }
+            Column {
+                spacing: 1
+                Text { text: sp.osName; color: sp.fg; font.family: sp.fam; font.pixelSize: 14; font.weight: 600 }
+                Text { text: sp.kernel; color: sp.dim; font.family: sp.fam; font.pixelSize: 11 }
+            }
+        }
+        // Battery: hidden on machines without one (sp.bat stays -1). Bolt shows while charging.
+        Row {
+            id: batRow
+            visible: sp.bat >= 0
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 4
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: sp.batCharging
+                text: String.fromCharCode(0xf0e7)   // bolt
+                font.family: "Symbols Nerd Font"; font.pixelSize: 11; color: "#7cfc72"
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: String.fromCharCode(sp.batGlyph)
+                font.family: "Symbols Nerd Font"; font.pixelSize: 16; color: sp.batColor
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: sp.bat + "%"
+                color: sp.fg; font.family: sp.fam; font.pixelSize: 12
+            }
+        }
+    }
+
+    Rectangle { width: parent.width; height: 1; color: Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, 0.12) }
+
+    // ---- CPU / RAM / GPU rows ----
+    Repeater {
+        model: [
+            { l: "CPU", v: sp.cpu, t: sp.cpuTemp },
+            { l: "RAM", v: sp.ram, t: -1 },
+            { l: "GPU", v: sp.gpu, t: sp.gpuTemp }
+        ]
+        delegate: Row {
+            required property var modelData
+            width: sp.width
+            spacing: 8
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: modelData.l; color: sp.dim
+                font.family: sp.fam; font.pixelSize: 12; font.weight: 600
+                width: 34
+            }
+            Rectangle {   // usage bar (track)
+                anchors.verticalCenter: parent.verticalCenter
+                width: 150; height: 8; radius: 4
+                color: Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, 0.12)
+                Item {
+                    id: fill
+                    width: parent.width * Math.max(0, Math.min(100, modelData.v)) / 100
+                    height: parent.height; clip: true
+                    Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+                    readonly property bool hot: modelData.v > 65
+                    // rolling rainbow on normal load; solid warning colour when hot (or no rainbow)
+                    BandRect { anchors.fill: parent; skin: sp.skin; visible: sp.skin && sp.skin.rainbow && !fill.hot }
+                    Rectangle { anchors.fill: parent; radius: 4; color: sp.usageColor(modelData.v)
+                        visible: !(sp.skin && sp.skin.rainbow) || fill.hot }
+                }
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: (modelData.v >= 0 ? modelData.v + "%" : "—")
+                      + (modelData.t >= 0 ? "  " + modelData.t + "°" : "")
+                color: sp.fg; font.family: sp.fam; font.pixelSize: 12
+            }
+        }
+    }
+
+    Rectangle { width: parent.width; height: 1; color: Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, 0.12) }
+
+    // ---- Active window ----
+    Row {
+        spacing: 8
+        width: sp.width
+        Text { text: "Focus"; color: sp.dim; font.family: sp.fam; font.pixelSize: 12; font.weight: 600; width: 34 }
+        Text {
+            text: sp.activeApp.length ? sp.activeApp : "—"
+            color: sp.fg; font.family: sp.fam; font.pixelSize: 12; elide: Text.ElideRight
+            width: sp.width - 50
+        }
+    }
+
+    // ---- Tray (plain Row, NOT a Flickable - a Flickable under the transparent hover
+    //      overlay swallows the clicks; the Level 1 buttons work because they're a plain Row).
+    //      left = activate, middle = secondary, right = context menu (anchored to the window). ----
+    Row {
+        id: trayRow
+        spacing: 12; height: 26
+        visible: SystemTray.items && SystemTray.items.values.length > 0
+        Repeater {
+            model: SystemTray.items
+            delegate: Item {
+                id: trayItem
+                required property var modelData
+                width: 22; height: 26
+                Image {
+                    anchors.centerIn: parent
+                    width: 18; height: 18; sourceSize.width: 18; sourceSize.height: 18
+                    source: trayItem.modelData.icon; smooth: true
+                    scale: trayMA.containsMouse ? 1.18 : 1.0
+                    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                }
+                MouseArea {
+                    id: trayMA
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: (m) => {
+                        const it = trayItem.modelData;
+                        try {
+                            if (m.button === Qt.LeftButton) {
+                                if (it.onlyMenu) sp.openTrayMenu(it, trayItem);   // appindicator: no activate, menu only
+                                else it.activate();                               // raise/toggle the app window
+                            } else if (m.button === Qt.MiddleButton) {
+                                // hard-close: resolve the app's PID via D-Bus and terminate it (SIGTERM->SIGKILL)
+                                Quickshell.execDetached([Quickshell.env("HOME") + "/.config/quickshell/hyprslob/tray-kill.sh",
+                                                         it.id || "", it.title || ""]);
+                            } else if (m.button === Qt.RightButton) {
+                                sp.openTrayMenu(it, trayItem);                    // some apps export a broken/empty menu (e.g. Betterbird) -> nothing to show
+                            }
+                        } catch (e) {
+                            console.log("[hyprslob tray] action failed:", e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

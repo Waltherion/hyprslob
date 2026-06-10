@@ -1,0 +1,55 @@
+{
+  // ========================================================================
+  //  HyprSlob - appearance config.  Controls ONLY appearance, never structure.
+  //  Live-reload: save the file and the pill updates instantly (no restart).
+  //
+  //  Every option below is shown COMMENTED OUT with its built-in default.
+  //  Uncomment a line and change the value to override it. Anything you leave
+  //  commented falls back to the default - so an empty {} is a valid config.
+  // ========================================================================
+
+  // ---- Pill look ----
+  // "cornerRadius": 14,        // pill corner radius in px (0 = sharp box)
+  // "borderWidth": 0,          // pill border width in px (0 = no border)
+  // "hasBox": true,            // false = no background box (just the text)
+  // "opacity": 1.0,            // whole-pill opacity, 0..1
+  // "scale": 1.0,              // whole-pill scale (1.0 = 100%)
+
+  // ---- Colors ----  (omit any slot to keep its default)
+  // "color": {
+  //   "background": "#cc000000",   // pill background (ARGB or RGB hex)
+  //   "text":       "#ffffff",     // clock / labels
+  //   "accent":     "#ffffff",     // active dot, badges, selected button
+  //   "border":     "#ffffff",     // pill border (needs borderWidth > 0)
+  //   "highlight":  "#ffffff"      // hover / focus highlight
+  // },
+  // "colors": "",              // OR: path to an external color file (same shape as "color")
+
+  // ---- Rainbow ----  (animated gradient over text / visualizer / active dot / selected button)
+  // "rainbow": false,          // true = rolling rainbow text (needs "stops"); false = static (free)
+  // "stops": ["#ff5555","#ffb86c","#50fa7b","#8be9fd","#bd93f9"],  // >=2 hex stops
+  // "rainbowPeriod": 420,      // px per full rainbow across the bar: lower = tighter/more, higher = stretched
+  // "rainbowSpeed": 1.0,       // roll speed: 1 = ~12s/cycle, 2 = faster, 0.5 = slower, 0 = frozen, negative = reverse
+  // "bloom": 0.0,              // glow strength 0..1 (x48px blur); 0 = off (free)
+
+  // ---- Clock side fields / workspaces ----
+  // "wsSide": "date",          // which side field shows the workspace dots: "time" | "date"
+  // "wsTrigger": "both",       // when dots show: "change" | "hover" | "both" | "always"
+  // "showVisualizer": false,   // true = Day morphs to a cava audio visualizer when sound plays
+
+  // ---- Side icons ----  (optional SVG paths; empty = none)
+  // "icon": { "left": "", "right": "" },
+
+  // ---- Typography ----
+  // "font": { "family": "Poppins", "size": 14, "weight": 300 },
+
+  // ---- Power-button commands ----  (each runs via `sh -c`; omit to use the default shown)
+  // "commands": {
+  //   "lock":     "hyprlock",
+  //   "suspend":  "systemctl suspend",     // e.g. "systemctl hibernate" if you hibernate
+  //   "logout":   "",                      // default = Hyprland Lua dispatch (hl.dsp.exit()); set a command to override
+  //   "reboot":   "systemctl reboot",
+  //   "poweroff": "systemctl poweroff"
+  // },
+  // "sleepLabel": "Sleep"      // label on the suspend button (set "Hibernate" if you hibernate)
+}
