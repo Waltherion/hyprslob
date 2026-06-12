@@ -31,7 +31,9 @@ Item {
         "font": {},                 // {family,size,weight}
         "commands": {},             // {lock,suspend,logout,reboot,poweroff} power-button commands (sh -c)
         "sleepLabel": "Sleep",      // label on the suspend button (set "Hibernate" if you hibernate)
-        "lowBatteryThreshold": 15   // notify once when the battery falls to this % while discharging (laptops)
+        "lowBatteryThreshold": 15,  // notify once when the battery falls to this % while discharging (laptops)
+        "launcherWidth": 520,       // app-launcher mode width in px (wider than the 320 panels)
+        "launcherMaxResults": 8     // app rows shown in the launcher before it scrolls
     })
 
     property var d: defaults          // merged result (defaults <- user config)
@@ -58,6 +60,8 @@ Item {
     readonly property var    commands: d.commands || ({})
     readonly property string sleepLabel: d.sleepLabel || "Sleep"
     readonly property int    lowBatteryThreshold: (typeof d.lowBatteryThreshold === "number" && d.lowBatteryThreshold > 0) ? d.lowBatteryThreshold : 15
+    readonly property int    launcherWidth: (typeof d.launcherWidth === "number" && d.launcherWidth > 0) ? d.launcherWidth : 520
+    readonly property int    launcherMaxResults: (typeof d.launcherMaxResults === "number" && d.launcherMaxResults > 0) ? d.launcherMaxResults : 8
 
     function _stripJsonc(s) {
         // remove /* */ blocks, then // line comments (not `://`/after quote),

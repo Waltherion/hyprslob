@@ -11,6 +11,8 @@ hl.layer_rule({ match = { namespace = "quickshell-hyprslob" }, ignore_alpha = 0.
 -- --- Keybinds ---
 -- Toggle the whole bar on/off
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob toggle"))
+-- Open the app launcher (the bar morphs into a search + app list)
+hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob launcher"))
 -- Open a Level-2 panel directly on the focused monitor
 hl.bind(mainMod .. " + CTRL + 1", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob select system"))
 hl.bind(mainMod .. " + CTRL + 2", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob select audio"))

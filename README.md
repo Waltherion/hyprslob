@@ -39,11 +39,13 @@ or always; the dots can ride the rainbow gradient too. No separate widget, no la
 
 ## The hub
 
-Hover the pill and it expands downward into five buttons; click one and the pill morphs further
+Hover the pill and it expands downward into a row of buttons; click one and the pill morphs further
 into that panel - one cohesive surface, never loose floating widgets.
 
-<p align="center"><img src="screenshots/04-level1Morph.png" width="470" alt="The five hub buttons"></p>
+<p align="center"><img src="screenshots/04-level1Morph.png" width="470" alt="The hub buttons"></p>
 
+- **Launcher** - the bar morphs into a fuzzy app launcher (fuzzy + frecency ranking, keyboard-first).
+  Bind a key (e.g. `Super+Space`) to open it instantly via `ipc call hyprslob launcher`.
 - **System** - OS + kernel, CPU/RAM/GPU usage & temps, focused window, system tray
   (left-click = activate, middle-click = hard-close the app, right-click = its menu).
 - **Audio** - media controls (MPRIS), volume slider, mute, output switcher (PipeWire).

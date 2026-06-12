@@ -21,6 +21,7 @@ Row {
     spacing: 10
 
     readonly property var entries: [
+        { key: "launcher", icon: String.fromCharCode(0xf002) },  // magnifier (app launcher / search)
         { key: "system", icon: String.fromCharCode(0xf2db) },  // microchip (CPU/GPU/RAM/tray -> level 2)
         { key: "audio",  icon: String.fromCharCode(0xf028) },  // speaker
         { key: "net",    icon: String.fromCharCode(0xf1eb) },  // wifi (net/bt panel)

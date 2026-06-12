@@ -38,6 +38,7 @@ ShellRoot {
         function expand(): void { root.hubIpc("expand", "") }
         function collapse(): void { root.hubIpc("collapse", "") }
         function select(key: string): void { root.hubIpc("select", key) }
+        function launcher(): void { root.barVisible = true; root.hubIpc("select", "launcher") }
     }
 
     // ---- Clock ----
@@ -215,6 +216,15 @@ ShellRoot {
             readonly property int expandGap: 8
             readonly property int expandExtra: level1H + expandGap * 2
             readonly property int level2W: 320      // Level-2 panel width
+            readonly property int launcherW: cfg.launcherWidth   // launcher mode is wider than the panels
+            // Animated width of the level-2/launcher contribution, so the box EASES wider/narrower
+            // when a panel opens/closes. The clock+visualizer term (clockRow.width) stays instant -
+            // it eases itself, and a Behavior on the whole box width would double-animate it (choppy).
+            // Only this term is behaviored; the launcher field is loaded + focused instantly, so typing
+            // isn't blocked while the box unfolds (it just clips the width in).
+            property real level2AnimW: win.hubActive === "launcher" ? win.launcherW
+                                     : win.hubActive !== "" ? win.level2W : 0
+            Behavior on level2AnimW { NumberAnimation { duration: 300; easing.type: Easing.InOutCubic } }
             readonly property int level2H: 390      // Level-2 reserved height (room for ~4 notifications)
             readonly property int level2PadBottom: 16   // extra space BELOW the panel -> bottom text doesn't crowd the rounded corners
 
@@ -344,7 +354,7 @@ ShellRoot {
                     // width tracks the CONTENT directly (no Behavior) -> follows the visualizer morph precisely.
                     width: win.boxPadH * 2 + Math.max(clockRow.width,
                                                       win.expandLevel > 0 ? level1.implicitWidth : 0,
-                                                      win.hubActive !== "" ? win.level2W : 0)
+                                                      win.level2AnimW)
                     color: pal.background
                     radius: pal.radius
                     border.width: pal.borderWidth
@@ -386,6 +396,7 @@ ShellRoot {
                                            : win.hubActive === "net" ? netPanelComp
                                            : win.hubActive === "notif" ? notifPanelComp
                                            : win.hubActive === "power" ? powerPanelComp
+                                           : win.hubActive === "launcher" ? launcherPanelComp
                                            : comingSoonComp
                         }
                     }
@@ -407,6 +418,7 @@ ShellRoot {
                     Component { id: notifPanelComp; NotifPanel { skin: pal; srv: server; dnd: root.dnd
                         onDndToggled: root.dnd = !root.dnd; onClearAllRequested: root.clearAllNotifs() } }
                     Component { id: powerPanelComp; PowerPanel { skin: pal; commands: cfg.commands; sleepLabel: cfg.sleepLabel } }
+                    Component { id: launcherPanelComp; LauncherPanel { skin: pal; width: win.launcherW; maxResults: cfg.launcherMaxResults; onPanelClose: win.expandLevel = 0 } }
                     Component {
                         id: comingSoonComp
                         Text {

@@ -54,5 +54,9 @@
   // "sleepLabel": "Sleep",     // label on the suspend button (set "Hibernate" if you hibernate)
 
   // ---- Laptop ----  (battery / brightness / power-profile auto-detect; hidden on machines without them)
-  // "lowBatteryThreshold": 15  // notify once when the battery falls to this % while discharging
+  // "lowBatteryThreshold": 15, // notify once when the battery falls to this % while discharging
+
+  // ---- Launcher ----  (app-launcher morph mode; theme/colors inherited automatically)
+  // "launcherWidth": 520,      // launcher mode width in px (wider than the 320 panels)
+  // "launcherMaxResults": 8    // app rows shown before the list scrolls
 }
