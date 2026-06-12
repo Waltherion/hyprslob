@@ -12,6 +12,18 @@ built with [Quickshell](https://quickshell.org/). One cohesive pill at the top t
   <img src="screenshots/11-fullDesktopSound.jpg" width="760" alt="HyprSlob on the desktop">
 </p>
 
+### Showcase
+
+See it in motion - the morph, the visualizer, the launcher and the panels:
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=WFAML7jn-bs">
+    <img src="https://img.youtube.com/vi/WFAML7jn-bs/maxresdefault.jpg" width="640" alt="HyprSlob video showcase on YouTube">
+  </a>
+  <br>
+  <sub>▶ Watch on YouTube (~1 min)</sub>
+</p>
+
 ## The pill
 
 Collapsed, it's intentionally minimal - `Time | Day | Date`:
