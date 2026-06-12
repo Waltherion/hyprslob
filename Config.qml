@@ -30,7 +30,8 @@ Item {
         "icon": {},                 // {left,right} SVG icon paths
         "font": {},                 // {family,size,weight}
         "commands": {},             // {lock,suspend,logout,reboot,poweroff} power-button commands (sh -c)
-        "sleepLabel": "Sleep"       // label on the suspend button (set "Hibernate" if you hibernate)
+        "sleepLabel": "Sleep",      // label on the suspend button (set "Hibernate" if you hibernate)
+        "lowBatteryThreshold": 15   // notify once when the battery falls to this % while discharging (laptops)
     })
 
     property var d: defaults          // merged result (defaults <- user config)
@@ -56,6 +57,7 @@ Item {
     readonly property var    font: d.font || ({})
     readonly property var    commands: d.commands || ({})
     readonly property string sleepLabel: d.sleepLabel || "Sleep"
+    readonly property int    lowBatteryThreshold: (typeof d.lowBatteryThreshold === "number" && d.lowBatteryThreshold > 0) ? d.lowBatteryThreshold : 15
 
     function _stripJsonc(s) {
         // remove /* */ blocks, then // line comments (not `://`/after quote),

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """System-info stream for the HyprSlob Level 2 system panel.
-Prints every 2s: cpu_pct;ram_pct;gpu_pct;cpu_temp;gpu_temp;battery_pct;charging (-1 = unknown;
-battery_pct = -1 on machines without a battery -> the UI hides the indicator; charging = 1 while
-charging, else 0). GPU is auto-detected: NVIDIA -> power-based load (utilization.gpu over-reports);
-AMD -> sysfs gpu_busy_percent (real utilization). Intel iGPUs not covered yet."""
+Prints every 2s, ';'-separated (-1 / "" = unknown; the UI hides anything unavailable):
+  cpu_pct;ram_pct;gpu_pct;cpu_temp;gpu_temp;battery_pct;charging;battery_min;battery_health;
+  brightness_pct;power_profile
+battery_pct/min/health are -1 on machines without a battery; charging = 1 while charging else 0;
+brightness_pct = -1 without a backlight; power_profile = "" without power-profiles-daemon.
+GPU is auto-detected: NVIDIA -> power-based load (utilization.gpu over-reports); AMD -> sysfs
+gpu_busy_percent (real utilization). Intel iGPUs not covered yet."""
 
 import glob
 import subprocess
@@ -109,8 +112,11 @@ def gpu_stats():
 
 
 def battery():
-    # Laptop battery via sysfs. Returns (percent, charging) where charging is 1/0. On a desktop
-    # there is no BAT* device -> (-1, 0), and the UI hides the indicator.
+    # Laptop battery via sysfs. Returns (percent, charging, minutes, health):
+    #   charging = 1 while charging else 0
+    #   minutes  = time to empty (discharging) or to full (charging), -1 if unknown
+    #   health   = full / design-full * 100, -1 if unknown
+    # On a desktop there is no BAT* device -> (-1, 0, -1, -1) and the UI hides everything.
     for bat in sorted(glob.glob("/sys/class/power_supply/BAT*")):
         cap = _read_int(bat + "/capacity")
         if cap is None:
@@ -119,8 +125,38 @@ def battery():
             status = open(bat + "/status").read().strip()
         except Exception:
             status = ""
-        return cap, 1 if status == "Charging" else 0
-    return -1, 0
+        charging = 1 if status == "Charging" else 0
+        # Time left: prefer energy_*/power_* (uWh/uW); fall back to charge_*/current_* (uAh/uA).
+        now, full, rate, design = (_read_int(bat + "/energy_now"), _read_int(bat + "/energy_full"),
+                                   _read_int(bat + "/power_now"), _read_int(bat + "/energy_full_design"))
+        if now is None or rate is None:
+            now, full, rate, design = (_read_int(bat + "/charge_now"), _read_int(bat + "/charge_full"),
+                                       _read_int(bat + "/current_now"), _read_int(bat + "/charge_full_design"))
+        minutes = -1
+        if rate and rate > 0 and now is not None and full is not None:
+            remaining = (full - now) if charging else now
+            minutes = max(0, round(remaining / rate * 60))
+        health = round(full / design * 100) if full and design and design > 0 else -1
+        return cap, charging, minutes, health
+    return -1, 0, -1, -1
+
+
+def brightness():
+    # Screen backlight as a percentage, or -1 if there's no backlight device (e.g. a desktop).
+    for bl in sorted(glob.glob("/sys/class/backlight/*")):
+        cur, mx = _read_int(bl + "/brightness"), _read_int(bl + "/max_brightness")
+        if cur is not None and mx and mx > 0:
+            return round(cur / mx * 100)
+    return -1
+
+
+def power_profile():
+    # Active power-profiles-daemon profile (power-saver|balanced|performance), or "" if ppd is
+    # absent. Shown whenever ppd is running (desktops included).
+    try:
+        return subprocess.check_output(["powerprofilesctl", "get"], text=True, timeout=2).strip()
+    except Exception:
+        return ""
 
 
 prev = cpu_times()
@@ -136,7 +172,9 @@ while True:
         ram = -1
     ct = cpu_temp()
     gu, gt, _gw = gpu_stats()
-    bat, charging = battery()
-    sys.stdout.write(f"{cpu};{ram};{gu};{ct};{gt};{bat};{charging}\n")
+    bat, charging, bat_min, bat_health = battery()
+    bright = brightness()
+    profile = power_profile()
+    sys.stdout.write(f"{cpu};{ram};{gu};{ct};{gt};{bat};{charging};{bat_min};{bat_health};{bright};{profile}\n")
     sys.stdout.flush()
     time.sleep(2)

@@ -99,6 +99,10 @@ ShellRoot {
     property int sysGpuTemp: -1
     property int sysBat: -1          // laptop battery % (-1 = no battery -> indicator hidden)
     property bool sysBatCharging: false
+    property int sysBatMin: -1       // minutes to empty/full (-1 = unknown)
+    property int sysBatHealth: -1    // battery health % (-1 = unknown)
+    property int sysBright: -1       // screen backlight % (-1 = no backlight)
+    property string sysProfile: ""   // active power profile ("" = no power-profiles-daemon)
     Process {
         command: ["python3", Quickshell.env("HOME") + "/.config/quickshell/hyprslob/sysinfo-stream.py"]
         running: root.barVisible
@@ -107,8 +111,27 @@ ShellRoot {
             if (p.length >= 5) { root.sysCpu = parseInt(p[0]); root.sysRam = parseInt(p[1]); root.sysGpu = parseInt(p[2]);
                 root.sysCpuTemp = parseInt(p[3]); root.sysGpuTemp = parseInt(p[4]); }
             if (p.length >= 7) { root.sysBat = parseInt(p[5]); root.sysBatCharging = p[6].trim() === "1"; }
+            if (p.length >= 11) { root.sysBatMin = parseInt(p[7]); root.sysBatHealth = parseInt(p[8]);
+                root.sysBright = parseInt(p[9]); root.sysProfile = p[10].trim(); }
         } }
     }
+    // Low-battery warning: fire once when crossing the threshold while discharging; re-arm on
+    // charge or when back above the threshold. Routed through whatever notification daemon is up.
+    property bool lowBatWarned: false
+    function _checkLowBattery() {
+        if (root.sysBat < 0) return;   // no battery
+        if (!root.sysBatCharging && root.sysBat <= cfg.lowBatteryThreshold) {
+            if (!root.lowBatWarned) {
+                root.lowBatWarned = true;
+                Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "HyprSlob",
+                    "Battery low", root.sysBat + "% remaining - plug in soon"]);
+            }
+        } else {
+            root.lowBatWarned = false;
+        }
+    }
+    onSysBatChanged: root._checkLowBattery()
+    onSysBatChargingChanged: root._checkLowBattery()
     property string activeApp: ""
     Process { id: winProc; command: ["hyprctl", "activewindow", "-j"]
         stdout: StdioCollector { id: winCol; onStreamFinished: {
@@ -160,7 +183,11 @@ ShellRoot {
             WlrLayershell.keyboardFocus: win.expandLevel > 0 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             visible: root.barVisible && !win.monitorFullscreen   // hide in fullscreen (like waybar)
             color: "transparent"
-            mask: Region { item: clockBox }                 // ONLY the box captures input; the rest passes through
+            // Normally only the box captures input (the rest passes through). While a tray menu is
+            // open, drop the mask so the whole (now full-height) window takes input - that's what
+            // lets the menu, which extends past the bar, receive clicks (popups don't here).
+            mask: trayMenu.visible ? null : boxMask
+            Region { id: boxMask; item: clockBox }
 
             // Full-bar themes (neon, no waybar) reserve ONLY the base height (exclusiveZone, constant);
             // the window is tall enough for the hub but the morph does NOT reserve more. Other themes: overlap waybar.
@@ -194,10 +221,21 @@ ShellRoot {
             // ---- Hub state PER MONITOR (hover controls this screen; IPC only if focused) ----
             property int expandLevel: 0
             property string hubActive: ""
-            onExpandLevelChanged: if (win.expandLevel === 0) win.hubActive = ""
-            onHubActiveChanged: if (win.hubActive === "notif") root.unread = 0   // opened -> read
+            onExpandLevelChanged: { if (win.expandLevel === 0) { win.hubActive = ""; trayMenu.close(); } }
+            onHubActiveChanged: { if (win.hubActive === "notif") root.unread = 0; trayMenu.close(); }   // opened -> read; switching panels closes any tray menu
             property bool holdOpen: false   // a tray menu is open -> don't auto-collapse the hub
             function holdHubOpen() { win.holdOpen = true; holdTimer.restart(); }
+            // Custom tray context menu (one per window). Right-clicking a tray icon opens it here;
+            // we render it ourselves because SystemTrayItem.display()'s clicks don't land on layer-shell.
+            TrayMenu {
+                id: trayMenu
+                skin: pal
+                onDismissed: win.holdOpen = false
+            }
+            function showTrayMenu(handle, x, y, h) {
+                win.holdOpen = true;        // keep the hub open while the menu is up
+                trayMenu.open(handle, x, y);
+            }
             Timer { id: expandDelay; interval: 40; onTriggered: win.expandLevel = 1 }   // snappy expand (tiny delay avoids triggering on a quick mouse pass)
             Timer { id: collapseDelay; interval: 400; onTriggered: if (!win.holdOpen) win.expandLevel = 0 }   // keep a forgiving collapse delay (don't lose it on an over-shoot)
             Timer { id: holdTimer; interval: 6000; onTriggered: { win.holdOpen = false; if (!hoverMA.containsMouse) win.expandLevel = 0 } }
@@ -214,7 +252,11 @@ ShellRoot {
             }
             readonly property real expandedBoxW: boxPadH * 2 + Math.max(clockRow.implicitWidth, level1.implicitWidth, level2W) + 16
             implicitWidth: Math.ceil(Math.max(contentW, expandedBoxW) * pal.uiScale)
-            implicitHeight: Math.ceil((contentH + expandExtra + expandGap + level2H) * pal.uiScale)
+            // Full screen height (top-anchored, so exclusiveZone still reserves only the bar at the
+            // top). Constant -> opening a tray menu never resizes the window (no jump); the extra
+            // area is transparent and click-through (masked), and gives a tall menu room to unfold.
+            implicitHeight: win.screen ? win.screen.height
+                          : Math.ceil((contentH + expandExtra + expandGap + level2H) * pal.uiScale)
 
             readonly property string fam: pal.fontFamily
             readonly property int wt: pal.fontWeight
@@ -355,6 +397,8 @@ ShellRoot {
                             cpu: root.sysCpu; ram: root.sysRam; gpu: root.sysGpu
                             cpuTemp: root.sysCpuTemp; gpuTemp: root.sysGpuTemp
                             bat: root.sysBat; batCharging: root.sysBatCharging
+                            batMin: root.sysBatMin; batHealth: root.sysBatHealth
+                            bright: root.sysBright; profile: root.sysProfile
                             kernel: root.kernel; osName: root.osName; activeApp: root.activeApp
                         }
                     }

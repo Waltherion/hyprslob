@@ -101,6 +101,8 @@ yay -S ttf-poppins
 Optional:
 - `hyprlock` - the default lock command (override `commands.lock` to use something else).
 - `nvidia-utils` - the GPU panel uses `nvidia-smi`; on AMD/Intel it just shows `-`.
+- `brightnessctl` - enables the brightness slider (laptops with a backlight).
+- `power-profiles-daemon` - enables the power-profile switcher (Saver / Balanced / Performance).
 
 `hyprctl`, `systemctl`, `busctl`, `pactl` come with Hyprland / systemd / PipeWire.
 

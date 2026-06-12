@@ -51,5 +51,8 @@
   //   "reboot":   "systemctl reboot",
   //   "poweroff": "systemctl poweroff"
   // },
-  // "sleepLabel": "Sleep"      // label on the suspend button (set "Hibernate" if you hibernate)
+  // "sleepLabel": "Sleep",     // label on the suspend button (set "Hibernate" if you hibernate)
+
+  // ---- Laptop ----  (battery / brightness / power-profile auto-detect; hidden on machines without them)
+  // "lowBatteryThreshold": 15  // notify once when the battery falls to this % while discharging
 }

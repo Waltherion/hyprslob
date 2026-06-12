@@ -24,6 +24,21 @@ Column {
                                   : bat >= 40 ? 0xf242 : bat >= 15 ? 0xf243 : 0xf244
     readonly property color batColor: (bat >= 0 && bat <= 15 && !batCharging) ? "#ff5555"
                                     : batCharging ? "#7cfc72" : sp.fg
+    property int batMin: -1       // minutes to empty (discharging) or full (charging)
+    property int batHealth: -1    // battery health % (full / design-full)
+    property int bright: -1       // screen backlight % (-1 = no backlight -> slider hidden)
+    property string profile: ""    // active power profile ("" = no ppd -> switcher hidden)
+    // UI mirrors: the slider/buttons set these for instant feedback; the 2s stream re-syncs them
+    // (writing the streamed properties directly would break their bindings).
+    property int brightUi: 0
+    property string profileUi: ""
+    onBrightChanged: if (bright >= 0) brightUi = bright;
+    onProfileChanged: profileUi = profile;
+    function batTime(m) {
+        if (m < 0) return "";
+        const h = Math.floor(m / 60), mm = m % 60;
+        return h > 0 ? h + "h" + (mm < 10 ? "0" : "") + mm + "m" : mm + "m";
+    }
     property string kernel: ""
     property string osName: "Linux"
     property string activeApp: ""
@@ -45,13 +60,12 @@ Column {
     // accent sampled from the rolling rainbow band at a global x (solid accent when rainbow off)
     function acAt(px) { return sp.skin ? sp.skin.bandAt(px) : sp.ac; }
 
-    // Open a tray item's context menu, anchored to the window just below the icon.
+    // Open a tray item's context menu, anchored to the window just below the icon. Renders via the
+    // window's custom TrayMenu (not item.display(), whose clicks don't land on Hyprland layer-shell).
     function openTrayMenu(item, anchorItem) {
         if (!item.hasMenu || !sp.hostWin) return;
-        sp.hostWin.holdHubOpen();   // keep the hub open while the menu is up
-        item.display(sp.hostWin,
-            anchorItem.mapToItem(null, 0, 0).x,
-            anchorItem.mapToItem(null, 0, anchorItem.height).y);
+        const p = anchorItem.mapToItem(null, 0, anchorItem.height);
+        sp.hostWin.showTrayMenu(item.menu, p.x, p.y, 1);
     }
 
     // ---- Header: OS logo + name + kernel  (battery right-aligned, laptop only) ----
@@ -141,6 +155,97 @@ Column {
                 text: (modelData.v >= 0 ? modelData.v + "%" : "—")
                       + (modelData.t >= 0 ? "  " + modelData.t + "°" : "")
                 color: sp.fg; font.family: sp.fam; font.pixelSize: 12
+            }
+        }
+    }
+
+    // ---- Laptop controls (each shows only when its hardware / daemon is present) ----
+    // Battery detail: % + time to empty/full + health.
+    Text {
+        visible: sp.bat >= 0
+        width: sp.width
+        color: sp.dim; font.family: sp.fam; font.pixelSize: 11
+        text: {
+            let s = sp.bat + "%";
+            const t = sp.batTime(sp.batMin);
+            if (t.length) s += "  ·  " + t + (sp.batCharging ? " until full" : " left");
+            if (sp.batHealth >= 0) s += "  ·  health " + sp.batHealth + "%";
+            return s;
+        }
+    }
+    // Brightness slider (needs a backlight; set via brightnessctl).
+    Row {
+        visible: sp.bright >= 0
+        width: sp.width; spacing: 10
+        Text {
+            anchors.verticalCenter: parent.verticalCenter; width: 22
+            text: String.fromCharCode(0xf185)   // sun
+            font.family: "Symbols Nerd Font"; font.pixelSize: 16; color: sp.fg
+        }
+        Rectangle {
+            id: brTrack
+            anchors.verticalCenter: parent.verticalCenter
+            width: sp.width - 22 - 50; height: 8; radius: 4
+            color: Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, 0.12)
+            Item {
+                width: brTrack.width * Math.max(0, Math.min(1, sp.brightUi / 100))
+                height: parent.height; clip: true
+                Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                BandRect { anchors.fill: parent; skin: sp.skin; visible: sp.skin && sp.skin.rainbow }
+                Rectangle { anchors.fill: parent; radius: 4; visible: !(sp.skin && sp.skin.rainbow); color: sp.ac }
+            }
+            MouseArea {
+                anchors.fill: parent; anchors.margins: -7
+                function setb(x) {
+                    const pct = Math.max(1, Math.min(100, Math.round(x / brTrack.width * 100)));
+                    sp.brightUi = pct;   // instant feedback; stream confirms within 2s
+                    Quickshell.execDetached(["brightnessctl", "set", pct + "%"]);
+                }
+                onPressed: (m) => setb(m.x)
+                onPositionChanged: (m) => { if (pressed) setb(m.x); }
+            }
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter; width: 40; horizontalAlignment: Text.AlignRight
+            text: sp.brightUi + "%"; color: sp.fg; font.family: sp.fam; font.pixelSize: 12
+        }
+    }
+    // Power-profile switcher (needs power-profiles-daemon; set via powerprofilesctl).
+    Row {
+        visible: sp.profile !== ""
+        width: sp.width; spacing: 6
+        Text {
+            anchors.verticalCenter: parent.verticalCenter; width: 22
+            text: String.fromCharCode(0xf0e7)   // bolt
+            font.family: "Symbols Nerd Font"; font.pixelSize: 15; color: sp.dim
+        }
+        Repeater {
+            model: [
+                { id: "power-saver", l: "Saver" },
+                { id: "balanced",    l: "Balanced" },
+                { id: "performance", l: "Perf" }
+            ]
+            delegate: Rectangle {
+                required property var modelData
+                readonly property bool active: sp.profileUi === modelData.id
+                width: (sp.width - 22 - 18) / 3; height: 24; radius: 7
+                color: active ? Qt.rgba(sp.ac.r, sp.ac.g, sp.ac.b, 0.22)
+                              : (pma.containsMouse ? Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, 0.10) : "transparent")
+                border.width: active ? 0 : 1
+                border.color: Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, 0.15)
+                Text {
+                    anchors.centerIn: parent
+                    text: modelData.l
+                    color: sp.fg; font.family: sp.fam; font.pixelSize: 11
+                    font.weight: parent.active ? 600 : 400
+                }
+                MouseArea {
+                    id: pma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        sp.profileUi = modelData.id;   // instant feedback; stream confirms within 2s
+                        Quickshell.execDetached(["powerprofilesctl", "set", modelData.id]);
+                    }
+                }
             }
         }
     }
