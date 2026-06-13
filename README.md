@@ -58,6 +58,8 @@ into that panel - one cohesive surface, never loose floating widgets.
 
 - **Launcher** - the bar morphs into a fuzzy app launcher (fuzzy + frecency ranking, keyboard-first).
   Bind a key (e.g. `Super+Space`) to open it instantly via `ipc call hyprslob launcher`.
+- **Menu** - a config-driven action palette of your own commands. Only appears once you've set
+  `actions` in your config (see [Custom menus & dmenu](#custom-menus--dmenu)).
 - **System** - OS + kernel, CPU/RAM/GPU usage & temps, focused window, system tray
   (left-click = activate, middle-click = hard-close the app, right-click = its menu).
 - **Audio** - media controls (MPRIS), volume slider, mute, output switcher (PipeWire).
@@ -77,6 +79,38 @@ into that panel - one cohesive surface, never loose floating widgets.
     <td></td>
   </tr>
 </table>
+
+## Custom menus & dmenu
+
+HyprSlob ships a generic, themed picker you can drive two ways.
+
+**The menu button** - add an `actions` list to your config; each entry appears in the bar's menu
+button and runs its command via `sh -c`:
+
+```jsonc
+"actions": [
+  { "label": "Power menu", "cmd": "wlogout" },
+  { "label": "Clipboard",  "cmd": "cliphist list | qs-dmenu -p 'Clip:' | cliphist decode | wl-copy" }
+]
+```
+
+The menu button only appears once `actions` is non-empty.
+
+**`qs-dmenu`** is a drop-in `fuzzel --dmenu` replacement (`install.sh` puts it in `~/.local/bin`).
+Pipe newline-separated choices in, get the selection on stdout - the picker renders right in the bar:
+
+```sh
+choice=$(printf '%s\n' Alpha Bravo Charlie | qs-dmenu --prompt 'Pick: ')
+```
+
+Items may carry an **image + colour preview** (tab-separated, shown in a side pane):
+
+```
+label <TAB> /path/to/preview.png <TAB> #rrggbb,#rrggbb,...
+```
+
+Under the hood it calls `qs -c hyprslob ipc call hyprslob menu <choicesFile> <resultFile> <prompt>`;
+the wrapper just handles the temp-file plumbing and waits for the result.
 
 ## Make it yours
 

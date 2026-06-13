@@ -29,6 +29,7 @@ ShellRoot {
     // per screen; IPC sends a signal that ONLY the focused screen reacts to.
     property bool barVisible: true
     signal hubIpc(string action, string key)
+    signal dmenuRequest(string choicesPath, string resultPath, string prompt)
     IpcHandler {
         target: "hyprslob"
         function toggle(): void { root.barVisible = !root.barVisible }
@@ -39,6 +40,7 @@ ShellRoot {
         function collapse(): void { root.hubIpc("collapse", "") }
         function select(key: string): void { root.hubIpc("select", key) }
         function launcher(): void { root.barVisible = true; root.hubIpc("select", "launcher") }
+        function menu(choicesPath: string, resultPath: string, prompt: string): void { root.barVisible = true; root.dmenuRequest(choicesPath, resultPath, prompt) }
     }
 
     // ---- Clock ----
@@ -223,16 +225,23 @@ ShellRoot {
             // Only this term is behaviored; the launcher field is loaded + focused instantly, so typing
             // isn't blocked while the box unfolds (it just clips the width in).
             property real level2AnimW: win.hubActive === "launcher" ? win.launcherW
+                                     : (win.hubActive === "dmenu" || win.hubActive === "menu") ? (l2.item ? l2.item.implicitWidth : win.level2W)
                                      : win.hubActive !== "" ? win.level2W : 0
             Behavior on level2AnimW { NumberAnimation { duration: 300; easing.type: Easing.InOutCubic } }
+            // Animate the level-1 (button row) width too, so the box eases wider before morphing down
+            // when the buttons are wider than the collapsed clock (instant would look choppy).
+            property real level1AnimW: win.expandLevel > 0 ? level1.implicitWidth : 0
+            Behavior on level1AnimW { NumberAnimation { duration: 300; easing.type: Easing.InOutCubic } }
             readonly property int level2H: 390      // Level-2 reserved height (room for ~4 notifications)
             readonly property int level2PadBottom: 16   // extra space BELOW the panel -> bottom text doesn't crowd the rounded corners
 
             // ---- Hub state PER MONITOR (hover controls this screen; IPC only if focused) ----
             property int expandLevel: 0
             property string hubActive: ""
+            // dmenu/menu/launcher are "modal" input modes - they don't auto-collapse on hover-leave.
+            readonly property bool modalMode: hubActive === "dmenu" || hubActive === "menu" || hubActive === "launcher"
             onExpandLevelChanged: { if (win.expandLevel === 0) { win.hubActive = ""; trayMenu.close(); } }
-            onHubActiveChanged: { if (win.hubActive === "notif") root.unread = 0; trayMenu.close(); }   // opened -> read; switching panels closes any tray menu
+            onHubActiveChanged: { if (win.hubActive === "notif") root.unread = 0; trayMenu.close(); win.holdOpen = win.modalMode; }   // opened -> read; switching panels closes the tray menu; modal modes hold open
             property bool holdOpen: false   // a tray menu is open -> don't auto-collapse the hub
             function holdHubOpen() { win.holdOpen = true; holdTimer.restart(); }
             // Custom tray context menu (one per window). Right-clicking a tray icon opens it here;
@@ -246,9 +255,54 @@ ShellRoot {
                 win.holdOpen = true;        // keep the hub open while the menu is up
                 trayMenu.open(handle, x, y);
             }
+            // ---- Generic dmenu / menu (morph-down hub panels; the `menu` IPC drives scripts, the
+            //      menu button drives config actions). The panel lives in the box, so input + keyboard
+            //      focus are covered by the normal mask + expandLevel - no overlay special-casing. ----
+            property string dmResultPath: ""
+            property string dmPrompt: ""
+            property var dmEntries: []
+            FileView {
+                id: dmChoicesFile
+                onLoaded: win.showDmenuPanel(win.parseEntries(dmChoicesFile.text()))
+                onLoadFailed: win.showDmenuPanel([])
+            }
+            FileView { id: dmResultFile }
+            function parseEntries(text) {
+                const lines = (text || "").split("\n").filter(l => l.length > 0);
+                return lines.map(l => {
+                    const p = l.split("\t");
+                    return { label: p[0], image: (p[1] || ""), colors: (p[2] ? p[2].split(",").filter(c => c.length) : []) };
+                });
+            }
+            function openDmenu(choicesPath, resultPath, prompt) {
+                win.dmResultPath = resultPath;
+                win.dmPrompt = prompt;
+                dmChoicesFile.path = choicesPath;
+                dmChoicesFile.reload();
+            }
+            function showDmenuPanel(entries) {
+                win.dmEntries = entries;
+                win.expandLevel = 1;
+                win.hubActive = "dmenu";   // morph down (holdOpen set by onHubActiveChanged)
+            }
+            function finishDmenu(label) {   // chosen label, or "" on cancel (fuzzel convention)
+                if (win.dmResultPath.length) {
+                    dmResultFile.path = win.dmResultPath;
+                    dmResultFile.setText(label);
+                    win.dmResultPath = "";
+                }
+                win.expandLevel = 0;   // collapse (clears hubActive via onExpandLevelChanged)
+            }
+            // Config-driven action palette (the menu button).
+            readonly property var menuEntries: (cfg.actions || []).map(a => ({ label: a.label }))
+            function runAction(label) {
+                const a = cfg.actions || [];
+                for (let i = 0; i < a.length; i++) if (a[i].label === label) { Quickshell.execDetached(["sh", "-c", a[i].cmd]); break; }
+                win.expandLevel = 0;
+            }
             Timer { id: expandDelay; interval: 40; onTriggered: win.expandLevel = 1 }   // snappy expand (tiny delay avoids triggering on a quick mouse pass)
             Timer { id: collapseDelay; interval: 400; onTriggered: if (!win.holdOpen) win.expandLevel = 0 }   // keep a forgiving collapse delay (don't lose it on an over-shoot)
-            Timer { id: holdTimer; interval: 6000; onTriggered: { win.holdOpen = false; if (!hoverMA.containsMouse) win.expandLevel = 0 } }
+            Timer { id: holdTimer; interval: 6000; onTriggered: { win.holdOpen = false; if (!boxHover.hovered) win.expandLevel = 0 } }
             readonly property bool isFocused: Hyprland.focusedMonitor && Hyprland.focusedMonitor.name === win.screen.name
             Connections {
                 target: root
@@ -258,6 +312,10 @@ ShellRoot {
                     else if (action === "expand") win.expandLevel = 1;
                     else if (action === "collapse") win.expandLevel = 0;
                     else if (action === "toggle") win.expandLevel = win.expandLevel > 0 ? 0 : 1;
+                }
+                function onDmenuRequest(choicesPath, resultPath, prompt) {
+                    if (!win.isFocused) return;   // show only on the focused monitor
+                    win.openDmenu(choicesPath, resultPath, prompt);
                 }
             }
             readonly property real expandedBoxW: boxPadH * 2 + Math.max(clockRow.implicitWidth, level1.implicitWidth, level2W) + 16
@@ -353,13 +411,25 @@ ShellRoot {
                             + (win.hubActive !== "" ? (win.expandGap + (l2.item ? l2.item.implicitHeight : win.level2H) + win.level2PadBottom) : 0)
                     // width tracks the CONTENT directly (no Behavior) -> follows the visualizer morph precisely.
                     width: win.boxPadH * 2 + Math.max(clockRow.width,
-                                                      win.expandLevel > 0 ? level1.implicitWidth : 0,
+                                                      win.level1AnimW,
                                                       win.level2AnimW)
                     color: pal.background
                     radius: pal.radius
                     border.width: pal.borderWidth
                     border.color: pal.border
                     Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.InOutCubic } }
+
+                    // Hover over the box drives the ws dots + hub morph. A HoverHandler (not a MouseArea
+                    // overlay) so it does NOT block the panels' own hover - list items need onEntered for
+                    // hover-to-select / live previews. Modal modes ignore hover-leave (stay open).
+                    HoverHandler {
+                        id: boxHover
+                        onHoveredChanged: {
+                            win.wsHover = boxHover.hovered;
+                            if (boxHover.hovered) { holdTimer.stop(); if (!win.modalMode) win.holdOpen = false; collapseDelay.stop(); expandDelay.restart(); }
+                            else { expandDelay.stop(); collapseDelay.restart(); }
+                        }
+                    }
 
                     // Clip Level 1+2 in an INNER Item (not on clockBox itself -> the border isn't clipped,
                     // Qt's clip quirk that otherwise cut off the bottom/right border in Level 0/1).
@@ -379,6 +449,7 @@ ShellRoot {
                             phase: root.rainbowPhase
                             period: win.rbPeriod
                             notifUnread: root.unread > 0
+                            showMenu: (cfg.actions && cfg.actions.length > 0)   // hide the menu button when no actions configured
                             activeKey: win.hubActive
                             onToggle: (key) => { win.hubActive = (win.hubActive === key ? "" : key); }
                         }
@@ -397,6 +468,8 @@ ShellRoot {
                                            : win.hubActive === "notif" ? notifPanelComp
                                            : win.hubActive === "power" ? powerPanelComp
                                            : win.hubActive === "launcher" ? launcherPanelComp
+                                           : win.hubActive === "dmenu" ? dmenuPanelComp
+                                           : win.hubActive === "menu" ? menuPanelComp
                                            : comingSoonComp
                         }
                     }
@@ -419,6 +492,8 @@ ShellRoot {
                         onDndToggled: root.dnd = !root.dnd; onClearAllRequested: root.clearAllNotifs() } }
                     Component { id: powerPanelComp; PowerPanel { skin: pal; commands: cfg.commands; sleepLabel: cfg.sleepLabel } }
                     Component { id: launcherPanelComp; LauncherPanel { skin: pal; width: win.launcherW; maxResults: cfg.launcherMaxResults; onPanelClose: win.expandLevel = 0 } }
+                    Component { id: dmenuPanelComp; DmenuPanel { skin: pal; entries: win.dmEntries; prompt: win.dmPrompt; maxResults: cfg.dmenuMaxResults; plainW: cfg.dmenuWidth; previewPaneW: 360; previewListW: cfg.dmenuPreviewWidth - 372; onChosen: (label) => win.finishDmenu(label); onCancelled: win.finishDmenu("") } }
+                    Component { id: menuPanelComp; DmenuPanel { skin: pal; entries: win.menuEntries; prompt: "Menu"; searchable: false; maxResults: cfg.dmenuMaxResults; plainW: cfg.menuWidth; onChosen: (label) => win.runAction(label); onCancelled: win.expandLevel = 0 } }
                     Component {
                         id: comingSoonComp
                         Text {
@@ -591,20 +666,7 @@ ShellRoot {
                     }
                 }
 
-                // Hover zone over the WHOLE box: drives ws dots ("hover"/"both") AND the hub morph.
-                // Follows clockBox (grows on expand -> hovering the buttons keeps the hub open). NoButton
-                // -> clicks pass through to the dot/button MouseAreas underneath.
-                MouseArea {
-                    id: hoverMA
-                    x: clockBox.x; y: clockBox.y; width: clockBox.width; height: clockBox.height
-                    hoverEnabled: true
-                    acceptedButtons: Qt.NoButton
-                    onContainsMouseChanged: {
-                        win.wsHover = containsMouse;
-                        if (containsMouse) { holdTimer.stop(); win.holdOpen = false; collapseDelay.stop(); expandDelay.restart(); }
-                        else { expandDelay.stop(); collapseDelay.restart(); }
-                    }
-                }
+                // (box hover is handled by the HoverHandler inside clockBox above)
             }
         }
     }

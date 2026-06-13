@@ -58,5 +58,15 @@
 
   // ---- Launcher ----  (app-launcher morph mode; theme/colors inherited automatically)
   // "launcherWidth": 520,      // launcher mode width in px (wider than the 320 panels)
-  // "launcherMaxResults": 8    // app rows shown before the list scrolls
+  // "launcherMaxResults": 8,   // app rows shown before the list scrolls
+
+  // ---- dmenu / menu ----  (themed picker via the `menu` IPC + the menu-button action palette)
+  // "dmenuWidth": 560,         // dmenu picker width in px
+  // "dmenuMaxResults": 12,     // dmenu rows shown before it scrolls
+  // "dmenuPreviewWidth": 820,  // width when items carry a preview (list + preview pane)
+  // "menuWidth": 420,          // the menu-button action-palette width
+  // "actions": [               // menu-button entries - your own commands (run via sh -c)
+  //   { "label": "Switch theme", "cmd": "$HOME/.config/hypr/scripts/theme-pick.sh" },
+  //   { "label": "Screenshot",   "cmd": "$HOME/.config/hypr/scripts/screenshot.sh" }
+  // ]
 }

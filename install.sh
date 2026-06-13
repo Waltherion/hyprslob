@@ -17,6 +17,15 @@ if [ "$SRC" != "$DEST" ]; then
 fi
 chmod +x "$DEST"/*.sh 2>/dev/null || true
 
+# Install the qs-dmenu helper (a drop-in `fuzzel --dmenu` replacement that renders in the bar) into
+# ~/.local/bin, so your own scripts can pipe choices to it: `printf '%s\n' a b c | qs-dmenu -p 'Pick:'`.
+if [ -f "$SRC/qs-dmenu" ]; then
+    BIN_DIR="$HOME/.local/bin"
+    mkdir -p "$BIN_DIR"
+    install -m 755 "$SRC/qs-dmenu" "$BIN_DIR/qs-dmenu"
+    echo "Installed qs-dmenu -> $BIN_DIR/qs-dmenu  (ensure ~/.local/bin is on your PATH)"
+fi
+
 # Seed the user config only if absent - never clobber an existing file/symlink.
 if [ ! -e "$CFG" ]; then
     cp "$DEST/config.default.jsonc" "$CFG"
@@ -34,6 +43,8 @@ Next:
      from hyprland/hyprslob.lua into your hyprland.lua
   2. Reload Hyprland, then run:   qs -c hyprslob
   3. Edit ~/.config/hyprslob/config.jsonc to taste (live-reload).
+  4. Optional: add an "actions" list to your config for the menu button, and pipe
+     choices to `qs-dmenu` from your own scripts (a fuzzel --dmenu replacement). See README.md.
 
 Dependencies: see README.md.
 EOF

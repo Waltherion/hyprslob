@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# qs-dmenu - drop-in replacement for `fuzzel --dmenu`, backed by HyprSlob's themed picker.
+# Reads newline-separated choices on stdin, shows the picker via HyprSlob's `menu` IPC, and prints
+# the chosen line on stdout (exit 0). Prints nothing and exits 1 if cancelled (Esc / click-outside).
+# Usage:  printf '%s\n' "${choices[@]}" | qs-dmenu [--prompt "Label: "] [--width N] [--lines N]
+# --width / --lines are accepted for fuzzel compatibility and ignored (size comes from config.jsonc).
+set -uo pipefail
+
+prompt=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -p|--prompt) prompt="${2-}"; shift 2 ;;
+        --prompt=*)  prompt="${1#*=}"; shift ;;
+        --width|--lines) shift 2 ;;
+        --width=*|--lines=*) shift ;;
+        *) shift ;;
+    esac
+done
+
+dir=$(mktemp -d /tmp/qs-dmenu.XXXXXX) || exit 1
+trap 'rm -rf "$dir"' EXIT
+choices="$dir/choices"
+result="$dir/result"
+cat > "$choices"
+
+qs -c hyprslob ipc call hyprslob menu "$choices" "$result" "$prompt" >/dev/null 2>&1 || exit 1
+
+# Wait for the picker to write the result file (selection, or empty on cancel). Up to ~120s.
+for _ in $(seq 1 2400); do
+    if [ -f "$result" ]; then break; fi
+    sleep 0.05
+done
+[ -f "$result" ] || exit 1
+sleep 0.05   # let the write settle
+sel=$(cat "$result")
+[ -n "$sel" ] || exit 1
+printf '%s\n' "$sel"

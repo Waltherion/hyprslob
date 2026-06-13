@@ -20,14 +20,19 @@ Row {
     property int btnSize: 42
     spacing: 10
 
-    readonly property var entries: [
-        { key: "launcher", icon: String.fromCharCode(0xf002) },  // magnifier (app launcher / search)
-        { key: "system", icon: String.fromCharCode(0xf2db) },  // microchip (CPU/GPU/RAM/tray -> level 2)
-        { key: "audio",  icon: String.fromCharCode(0xf028) },  // speaker
-        { key: "net",    icon: String.fromCharCode(0xf1eb) },  // wifi (net/bt panel)
-        { key: "notif",  icon: String.fromCharCode(0xf0f3) },  // bell
-        { key: "power",  icon: String.fromCharCode(0xf011) }   // power
-    ]
+    property bool showMenu: true   // include the menu (action-palette) button; hidden when no actions
+    readonly property var entries: {
+        var e = [
+            { key: "launcher", icon: String.fromCharCode(0xf002) },  // magnifier (app launcher / search)
+            { key: "menu",     icon: String.fromCharCode(0xf0c9) },  // bars (config-driven action palette)
+            { key: "system",   icon: String.fromCharCode(0xf2db) },  // microchip (CPU/GPU/RAM/tray -> level 2)
+            { key: "audio",    icon: String.fromCharCode(0xf028) },  // speaker
+            { key: "net",      icon: String.fromCharCode(0xf1eb) },  // wifi (net/bt panel)
+            { key: "notif",    icon: String.fromCharCode(0xf0f3) },  // bell
+            { key: "power",    icon: String.fromCharCode(0xf011) }   // power
+        ];
+        return l1.showMenu ? e : e.filter(x => x.key !== "menu");
+    }
 
     // text color at global x: rainbow-band sample (like RainbowLabel), otherwise solid pal.text
     function colAt(px) {
