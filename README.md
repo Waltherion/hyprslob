@@ -90,7 +90,7 @@ restyled:
     <td align="center"><img src="screenshots/13-otherDesignExample2.png" width="330"><br><sub>Teal / rainbow</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/14-otherDesignExample3.png" width="330"><br><sub>Neon</sub></td>
+    <td align="center"><img src="screenshots/14-otherDesignExample3.png" width="330"><br><sub>Purple</sub></td>
     <td align="center"><img src="screenshots/15-otherDesignExample4.png" width="330"><br><sub>Monochrome</sub></td>
   </tr>
 </table>
