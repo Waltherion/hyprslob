@@ -66,6 +66,8 @@ into that panel - one cohesive surface, never loose floating widgets.
 - **Network** - Wi-Fi & Bluetooth toggles + device list.
 - **Notifications** - history, do-not-disturb, clear-all (HyprSlob is the notification daemon).
 - **Power** - lock, sleep/hibernate, log out, restart, shut down (all configurable commands).
+  Bind a key (e.g. `Super+Escape`) to the `power` IPC to open it as a quick power menu;
+  `q`/`w`/`e`/`r`/`t` trigger the five actions.
 
 <table align="center">
   <tr>

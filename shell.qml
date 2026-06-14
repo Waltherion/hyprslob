@@ -41,6 +41,7 @@ ShellRoot {
         function select(key: string): void { root.hubIpc("select", key) }
         function launcher(): void { root.barVisible = true; root.hubIpc("select", "launcher") }
         function menu(choicesPath: string, resultPath: string, prompt: string): void { root.barVisible = true; root.dmenuRequest(choicesPath, resultPath, prompt) }
+        function power(): void { root.barVisible = true; root.hubIpc("toggleKey", "power") }   // power menu (Super+Esc); q/w/e/r/t pick
     }
 
     // ---- Clock ----
@@ -241,7 +242,7 @@ ShellRoot {
             // dmenu/menu/launcher are "modal" input modes - they don't auto-collapse on hover-leave.
             readonly property bool modalMode: hubActive === "dmenu" || hubActive === "menu" || hubActive === "launcher"
             onExpandLevelChanged: { if (win.expandLevel === 0) { win.hubActive = ""; trayMenu.close(); } }
-            onHubActiveChanged: { if (win.hubActive === "notif") root.unread = 0; trayMenu.close(); win.holdOpen = win.modalMode; }   // opened -> read; switching panels closes the tray menu; modal modes hold open
+            onHubActiveChanged: { if (win.hubActive === "notif") root.unread = 0; trayMenu.close(); win.holdOpen = win.modalMode; if (win.hubActive === "power") Qt.callLater(() => pille.forceActiveFocus()); }   // opened -> read; tray menu closes; modal modes hold open; power grabs focus for q/w/e/r/t
             property bool holdOpen: false   // a tray menu is open -> don't auto-collapse the hub
             function holdHubOpen() { win.holdOpen = true; holdTimer.restart(); }
             // Custom tray context menu (one per window). Right-clicking a tray icon opens it here;
@@ -309,6 +310,7 @@ ShellRoot {
                 function onHubIpc(action, key) {
                     if (!win.isFocused) return;
                     if (action === "select") { win.expandLevel = 1; win.hubActive = (win.hubActive === key ? "" : key); }
+                    else if (action === "toggleKey") { if (win.hubActive === key) win.expandLevel = 0; else { win.expandLevel = 1; win.hubActive = key; } }   // clean open/close toggle (power menu)
                     else if (action === "expand") win.expandLevel = 1;
                     else if (action === "collapse") win.expandLevel = 0;
                     else if (action === "toggle") win.expandLevel = win.expandLevel > 0 ? 0 : 1;
@@ -400,6 +402,17 @@ ShellRoot {
                 scale: pal.uiScale
                 focus: true
                 Keys.onEscapePressed: win.expandLevel = 0   // Esc collapses the hub
+                // Power menu: q/w/e/r/t trigger the 5 actions (lock/sleep/log out/restart/shut down).
+                Keys.onPressed: (event) => {
+                    if (win.hubActive !== "power" || !l2.item || !l2.item.activate) return;
+                    var i = -1;
+                    if (event.key === Qt.Key_Q) i = 0;
+                    else if (event.key === Qt.Key_W) i = 1;
+                    else if (event.key === Qt.Key_E) i = 2;
+                    else if (event.key === Qt.Key_R) i = 3;
+                    else if (event.key === Qt.Key_T) i = 4;
+                    if (i >= 0) { l2.item.activate(i); event.accepted = true; }
+                }
 
                 // ---- Box behind the pill ----
                 Rectangle {
@@ -490,7 +503,7 @@ ShellRoot {
                     Component { id: netPanelComp; NetPanel { skin: pal } }
                     Component { id: notifPanelComp; NotifPanel { skin: pal; srv: server; dnd: root.dnd
                         onDndToggled: root.dnd = !root.dnd; onClearAllRequested: root.clearAllNotifs() } }
-                    Component { id: powerPanelComp; PowerPanel { skin: pal; commands: cfg.commands; sleepLabel: cfg.sleepLabel } }
+                    Component { id: powerPanelComp; PowerPanel { skin: pal; commands: cfg.commands; sleepLabel: cfg.sleepLabel; onRequestClose: win.expandLevel = 0 } }
                     Component { id: launcherPanelComp; LauncherPanel { skin: pal; width: win.launcherW; maxResults: cfg.launcherMaxResults; onPanelClose: win.expandLevel = 0 } }
                     Component { id: dmenuPanelComp; DmenuPanel { skin: pal; entries: win.dmEntries; prompt: win.dmPrompt; maxResults: cfg.dmenuMaxResults; plainW: cfg.dmenuWidth; previewPaneW: 360; previewListW: cfg.dmenuPreviewWidth - 372; onChosen: (label) => win.finishDmenu(label); onCancelled: win.finishDmenu("") } }
                     Component { id: menuPanelComp; DmenuPanel { skin: pal; entries: win.menuEntries; prompt: "Menu"; searchable: false; maxResults: cfg.dmenuMaxResults; plainW: cfg.menuWidth; onChosen: (label) => win.runAction(label); onCancelled: win.expandLevel = 0 } }

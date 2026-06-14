@@ -15,12 +15,17 @@ Row {
     readonly property color fg: skin ? skin.text : "#ffffff"
     readonly property color ac: skin ? skin.accent : "#ffffff"
     readonly property string fam: skin ? skin.fontFamily : "Poppins"
+    readonly property var keyHints: ["q", "w", "e", "r", "t"]   // q/w/e/r/t hotkeys (routed from shell.qml)
+    signal requestClose()
 
-    // Run the config command via sh -c (override), else the action's direct argv default.
+    // Run the config command via sh -c (override), else the action's direct argv default; then close the hub.
     function _act(a) {
         if (a.cmd && a.cmd.length) Quickshell.execDetached(["sh", "-c", a.cmd]);
         else if (a.argv) Quickshell.execDetached(a.argv);
+        pp.requestClose();
     }
+    // Trigger action i (0-based) - used by the q/w/e/r/t keyboard shortcuts.
+    function activate(i) { if (i >= 0 && i < pp.acts.length) pp._act(pp.acts[i]); }
 
     readonly property var acts: [
         { ic: 0xf023, l: "Lock",          cmd: (pp.commands.lock     || "hyprlock") },
@@ -34,6 +39,7 @@ Row {
         model: pp.acts
         delegate: Rectangle {
             required property var modelData
+            required property int index
             width: 58; height: 56
             radius: Math.min(12, (pp.skin ? Math.max(pp.skin.radius, 8) : 8))
             color: ma.containsMouse ? Qt.rgba(pp.ac.r, pp.ac.g, pp.ac.b, 0.22)
@@ -49,6 +55,12 @@ Row {
                     font.family: "Symbols Nerd Font"; font.pixelSize: 18; color: pp.fg }
                 Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.l
                     font.family: pp.fam; font.pixelSize: 10; color: pp.fg }
+            }
+            Text {   // q/w/e/r/t hotkey hint
+                anchors.left: parent.left; anchors.top: parent.top; anchors.margins: 5
+                text: pp.keyHints[index] || ""
+                font.family: pp.fam; font.pixelSize: 9; font.weight: Font.Bold
+                color: Qt.rgba(pp.fg.r, pp.fg.g, pp.fg.b, 0.5)
             }
             MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                 onClicked: pp._act(modelData) }
