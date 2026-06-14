@@ -56,11 +56,12 @@ Row {
             readonly property bool selected: l1.activeKey === btn.modelData.key
             readonly property color fg: l1.skin ? l1.skin.text : "#ffffff"
             readonly property color bg: l1.skin ? l1.skin.background : "#000000"
+            readonly property color hl: l1.skin ? l1.skin.highlight : "#ffffff"
 
             width: l1.btnSize; height: l1.btnSize
             radius: Math.min(width / 2, (l1.skin ? Math.max(l1.skin.radius, 10) : 10))
             color: selected ? l1.colAt(mapToItem(null, width / 2, 0).x)
-                            : (ma.containsMouse ? Qt.rgba(fg.r, fg.g, fg.b, 0.16)
+                            : (ma.containsMouse ? Qt.rgba(hl.r, hl.g, hl.b, 0.16)
                                                 : Qt.rgba(fg.r, fg.g, fg.b, 0.07))
             border.width: 1
             border.color: selected ? l1.colAt(mapToItem(null, width / 2, 0).x)

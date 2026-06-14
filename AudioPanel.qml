@@ -12,6 +12,7 @@ Column {
     width: 320; spacing: 9
     readonly property color fg: skin ? skin.text : "#ffffff"
     readonly property color ac: skin ? skin.accent : "#ffffff"
+    readonly property color hl: skin ? skin.highlight : "#ffffff"
     readonly property color dim: Qt.rgba(fg.r, fg.g, fg.b, 0.55)
     readonly property string fam: skin ? skin.fontFamily : "Poppins"
 
@@ -259,7 +260,7 @@ Column {
             visible: isOut
             width: ap.width; height: isOut ? 28 : 0; radius: 7
             color: isDefault ? Qt.rgba(ap.ac.r, ap.ac.g, ap.ac.b, 0.20)
-                             : (sma.containsMouse ? Qt.rgba(ap.fg.r, ap.fg.g, ap.fg.b, 0.10) : "transparent")
+                             : (sma.containsMouse ? Qt.rgba(ap.hl.r, ap.hl.g, ap.hl.b, 0.10) : "transparent")
             Text {
                 anchors.left: parent.left; anchors.leftMargin: 10; anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 20; elide: Text.ElideRight

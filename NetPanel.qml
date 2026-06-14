@@ -12,6 +12,7 @@ Column {
     width: 320; spacing: 8
     readonly property color fg: skin ? skin.text : "#ffffff"
     readonly property color ac: skin ? skin.accent : "#ffffff"
+    readonly property color hl: skin ? skin.highlight : "#ffffff"
     readonly property color dim: Qt.rgba(fg.r, fg.g, fg.b, 0.55)
     readonly property string fam: skin ? skin.fontFamily : "Poppins"
     // accent sampled from the rolling rainbow band at a global x (solid accent when rainbow off)
@@ -77,7 +78,7 @@ Column {
             readonly property bool show: modelData && (modelData.paired || modelData.connected)
             visible: show
             width: np.width; height: show ? 28 : 0; radius: 7
-            color: dma.containsMouse ? Qt.rgba(np.fg.r, np.fg.g, np.fg.b, 0.10) : "transparent"
+            color: dma.containsMouse ? Qt.rgba(np.hl.r, np.hl.g, np.hl.b, 0.10) : "transparent"
             Text {
                 anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 80; elide: Text.ElideRight

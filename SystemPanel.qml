@@ -45,6 +45,7 @@ Column {
 
     readonly property color fg: skin ? skin.text : "#ffffff"
     readonly property color ac: skin ? skin.accent : "#ffffff"
+    readonly property color hl: skin ? skin.highlight : "#ffffff"
     readonly property color dim: Qt.rgba(fg.r, fg.g, fg.b, 0.55)
     readonly property string fam: skin ? skin.fontFamily : "Poppins"
 
@@ -230,7 +231,7 @@ Column {
                 readonly property bool active: sp.profileUi === modelData.id
                 width: (sp.width - 22 - 18) / 3; height: 24; radius: 7
                 color: active ? Qt.rgba(sp.ac.r, sp.ac.g, sp.ac.b, 0.22)
-                              : (pma.containsMouse ? Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, 0.10) : "transparent")
+                              : (pma.containsMouse ? Qt.rgba(sp.hl.r, sp.hl.g, sp.hl.b, 0.10) : "transparent")
                 border.width: active ? 0 : 1
                 border.color: Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, 0.15)
                 Text {

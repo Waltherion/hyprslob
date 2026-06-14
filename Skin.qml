@@ -32,7 +32,7 @@ QtObject {
     readonly property color text:       _pick("text",       defText)
     readonly property color accent:     _pick("accent",     defAccent)
     readonly property color border:     _pick("border",     defBorder)
-    readonly property color highlight:  _pick("highlight",  defHighlight)
+    readonly property color highlight:  _pick("highlight",  text)   // hover/focus tint; defaults to text (look unchanged unless set)
     readonly property color separator:  Qt.rgba(text.r, text.g, text.b, 0.35)
 
     // Rainbow gradient stops - drives rainbow text, visualizer curve, active ws dot,
