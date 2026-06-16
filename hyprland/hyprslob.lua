@@ -2,7 +2,9 @@
 -- Add these to your hyprland.lua. `mainMod` is your main modifier (e.g. "SUPER").
 
 -- --- Autostart ---
-hl.exec_cmd("qs -c hyprslob")
+-- -n = --no-duplicate (per-config): a second launch of this config exits immediately, so you
+-- never end up with two bars stacked. To force-clear a stuck instance: `qs kill -c hyprslob`.
+hl.exec_cmd("qs -n -c hyprslob")
 
 -- --- Blur the pill (namespace must match HyprSlob's layer) ---
 hl.layer_rule({ match = { namespace = "quickshell-hyprslob" }, blur = true })

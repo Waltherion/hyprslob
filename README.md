@@ -167,8 +167,13 @@ cd hyprslob
 Then add the Hyprland integration and launch:
 
 ```sh
-qs -c hyprslob
+qs -n -c hyprslob
 ```
+
+The `-n` (`--no-duplicate`) flag makes a second launch of the **same config** exit immediately,
+so an autostart + a manual run (or a flaky theme-switch restart) can't leave you with two bars
+stacked on top of each other. It's per-config, so it never touches your other Quickshell instances.
+To force-clear a stuck instance, use Quickshell's own registry: `qs kill -c hyprslob`.
 
 ## Hyprland integration
 
