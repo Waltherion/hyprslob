@@ -65,7 +65,8 @@ into that panel - one cohesive surface, never loose floating widgets.
   caffeine (keep-awake) toggle sits by the OS name - it holds a Wayland idle inhibitor that survives
   fullscreen; also bindable via the `caffeine` IPC.
 - **Audio** - media controls (MPRIS), volume slider, mute, output switcher (PipeWire).
-- **Network** - Wi-Fi & Bluetooth toggles + device list.
+- **Network** - three boxes: a status box showing what you're connected to (Wired or the Wi-Fi
+  SSID), a Wi-Fi box with its own radio toggle + settings, and Bluetooth (toggle + paired devices).
 - **Notifications** - history, do-not-disturb, clear-all (HyprSlob is the notification daemon).
 - **Power** - lock, sleep/hibernate, log out, restart, shut down (all configurable commands).
   Bind a key (e.g. `Super+Escape`) to the `power` IPC to open it as a quick power menu;
