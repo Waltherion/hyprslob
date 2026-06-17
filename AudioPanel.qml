@@ -63,9 +63,12 @@ Column {
     function acAt(px) { return ap.skin ? ap.skin.bandAt(px) : ap.ac; }
 
     readonly property var sink: Pipewire.defaultAudioSink
-    PwObjectTracker { objects: ap.sink ? [ap.sink] : [] }
+    readonly property var source: Pipewire.defaultAudioSource
+    PwObjectTracker { objects: (ap.sink ? [ap.sink] : []).concat(ap.source ? [ap.source] : []) }
     readonly property bool muted: ap.sink && ap.sink.audio ? ap.sink.audio.muted : false
     readonly property real vol: ap.sink && ap.sink.audio ? ap.sink.audio.volume : 0
+    readonly property bool micMuted: ap.source && ap.source.audio ? ap.source.audio.muted : false
+    readonly property real micVol: ap.source && ap.source.audio ? ap.source.audio.volume : 0
 
     // ---- Media player (MPRIS). Hidden when nothing is playing -> panel shrinks. ----
     Rectangle {
@@ -235,6 +238,41 @@ Column {
         Text {
             anchors.verticalCenter: parent.verticalCenter; width: 40; horizontalAlignment: Text.AlignRight
             text: Math.round(ap.vol * 100) + "%"; color: ap.fg; font.family: ap.fam; font.pixelSize: 12
+        }
+    }
+
+    // ---- Microphone (default input source). Hidden when there's no input device. ----
+    Row {
+        visible: ap.source !== null
+        width: ap.width; spacing: 10
+        Text {
+            anchors.verticalCenter: parent.verticalCenter; width: 22
+            text: String.fromCharCode(ap.micMuted ? 0xf131 : 0xf130)   // mic-slash / mic
+            font.family: "Symbols Nerd Font"; font.pixelSize: 18; color: ap.micMuted ? ap.dim : ap.fg
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                onClicked: if (ap.source && ap.source.audio) ap.source.audio.muted = !ap.source.audio.muted }
+        }
+        Rectangle {
+            id: micTrack
+            anchors.verticalCenter: parent.verticalCenter
+            width: ap.width - 22 - 50; height: 8; radius: 4
+            color: Qt.rgba(ap.fg.r, ap.fg.g, ap.fg.b, 0.12)
+            Item {
+                width: micTrack.width * Math.max(0, Math.min(1, ap.micVol)); height: parent.height; clip: true
+                BandRect { anchors.fill: parent; skin: ap.skin; visible: !ap.micMuted && ap.skin && ap.skin.rainbow }
+                Rectangle { anchors.fill: parent; radius: 4; visible: ap.micMuted || !(ap.skin && ap.skin.rainbow)
+                    color: ap.micMuted ? ap.dim : ap.ac }
+            }
+            MouseArea {
+                anchors.fill: parent; anchors.margins: -7
+                function setv(x) { if (ap.source && ap.source.audio) ap.source.audio.volume = Math.max(0, Math.min(1, x / micTrack.width)); }
+                onPressed: (m) => setv(m.x)
+                onPositionChanged: (m) => { if (pressed) setv(m.x); }
+            }
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter; width: 40; horizontalAlignment: Text.AlignRight
+            text: Math.round(ap.micVol * 100) + "%"; color: ap.fg; font.family: ap.fam; font.pixelSize: 12
         }
     }
 

@@ -17,6 +17,7 @@ Column {
     property int gpu: -1
     property int cpuTemp: -1
     property int gpuTemp: -1
+    property int disk: -1        // root filesystem used % (-1 = unknown -> bar shows "—")
     property int bat: -1         // laptop battery %, -1 = no battery (desktop) -> indicator hidden
     property bool batCharging: false
     // Font Awesome battery glyph by level: full / three-quarters / half / quarter / empty
@@ -154,7 +155,8 @@ Column {
         model: [
             { l: "CPU", v: sp.cpu, t: sp.cpuTemp },
             { l: "RAM", v: sp.ram, t: -1 },
-            { l: "GPU", v: sp.gpu, t: sp.gpuTemp }
+            { l: "GPU", v: sp.gpu, t: sp.gpuTemp },
+            { l: "DISK", v: sp.disk, t: -1 }
         ]
         delegate: Row {
             required property var modelData

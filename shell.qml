@@ -109,6 +109,7 @@ ShellRoot {
     property int sysBatHealth: -1    // battery health % (-1 = unknown)
     property int sysBright: -1       // screen backlight % (-1 = no backlight)
     property string sysProfile: ""   // active power profile ("" = no power-profiles-daemon)
+    property int sysDisk: -1          // root filesystem used % (-1 = unknown)
     Process {
         command: ["python3", Quickshell.env("HOME") + "/.config/quickshell/hyprslob/sysinfo-stream.py"]
         running: root.barVisible
@@ -119,6 +120,7 @@ ShellRoot {
             if (p.length >= 7) { root.sysBat = parseInt(p[5]); root.sysBatCharging = p[6].trim() === "1"; }
             if (p.length >= 11) { root.sysBatMin = parseInt(p[7]); root.sysBatHealth = parseInt(p[8]);
                 root.sysBright = parseInt(p[9]); root.sysProfile = p[10].trim(); }
+            if (p.length >= 12) { root.sysDisk = parseInt(p[11]); }
         } }
     }
     // Low-battery warning: fire once when crossing the threshold while discharging; re-arm on
@@ -495,6 +497,7 @@ ShellRoot {
                             hostWin: win
                             cpu: root.sysCpu; ram: root.sysRam; gpu: root.sysGpu
                             cpuTemp: root.sysCpuTemp; gpuTemp: root.sysGpuTemp
+                            disk: root.sysDisk
                             bat: root.sysBat; batCharging: root.sysBatCharging
                             batMin: root.sysBatMin; batHealth: root.sysBatHealth
                             bright: root.sysBright; profile: root.sysProfile

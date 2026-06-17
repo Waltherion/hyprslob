@@ -2,13 +2,15 @@
 """System-info stream for the HyprSlob Level 2 system panel.
 Prints every 2s, ';'-separated (-1 / "" = unknown; the UI hides anything unavailable):
   cpu_pct;ram_pct;gpu_pct;cpu_temp;gpu_temp;battery_pct;charging;battery_min;battery_health;
-  brightness_pct;power_profile
+  brightness_pct;power_profile;disk_pct
 battery_pct/min/health are -1 on machines without a battery; charging = 1 while charging else 0;
 brightness_pct = -1 without a backlight; power_profile = "" without power-profiles-daemon.
+disk_pct is the used % of the root filesystem (-1 if it can't be read).
 GPU is auto-detected: NVIDIA -> power-based load (utilization.gpu over-reports); AMD -> sysfs
 gpu_busy_percent (real utilization). Intel iGPUs not covered yet."""
 
 import glob
+import os
 import subprocess
 import sys
 import time
@@ -159,6 +161,17 @@ def power_profile():
         return ""
 
 
+def disk_pct(path="/"):
+    # Used percentage of the filesystem at `path` (the root fs by default). -1 if it can't be read.
+    try:
+        st = os.statvfs(path)
+        total = st.f_blocks * st.f_frsize
+        free = st.f_bavail * st.f_frsize          # bavail = space usable by a non-root user
+        return round((total - free) / total * 100) if total else -1
+    except Exception:
+        return -1
+
+
 prev = cpu_times()
 time.sleep(0.4)
 while True:
@@ -175,6 +188,8 @@ while True:
     bat, charging, bat_min, bat_health = battery()
     bright = brightness()
     profile = power_profile()
-    sys.stdout.write(f"{cpu};{ram};{gu};{ct};{gt};{bat};{charging};{bat_min};{bat_health};{bright};{profile}\n")
+    disk = disk_pct()
+    sys.stdout.write(f"{cpu};{ram};{gu};{ct};{gt};{bat};{charging};{bat_min};{bat_health};{bright};"
+                     f"{profile};{disk}\n")
     sys.stdout.flush()
     time.sleep(2)
