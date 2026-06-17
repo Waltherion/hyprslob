@@ -28,6 +28,7 @@ ShellRoot {
     // Hide/show (Super+B). Hub state (expandLevel/hubActive) is PER-MONITOR (on win) - hover controls
     // per screen; IPC sends a signal that ONLY the focused screen reacts to.
     property bool barVisible: true
+    property bool caffeine: false   // keep-awake (Wayland idle inhibitor); toggled from the system panel
     signal hubIpc(string action, string key)
     signal dmenuRequest(string choicesPath, string resultPath, string prompt)
     IpcHandler {
@@ -42,6 +43,7 @@ ShellRoot {
         function launcher(): void { root.barVisible = true; root.hubIpc("select", "launcher") }
         function menu(choicesPath: string, resultPath: string, prompt: string): void { root.barVisible = true; root.dmenuRequest(choicesPath, resultPath, prompt) }
         function power(): void { root.barVisible = true; root.hubIpc("toggleKey", "power") }   // power menu (Super+Esc); q/w/e/r/t pick
+        function caffeine(): void { root.caffeine = !root.caffeine }   // toggle keep-awake (optional keybind)
     }
 
     // ---- Clock ----
@@ -497,6 +499,8 @@ ShellRoot {
                             batMin: root.sysBatMin; batHealth: root.sysBatHealth
                             bright: root.sysBright; profile: root.sysProfile
                             kernel: root.kernel; osName: root.osName; activeApp: root.activeApp
+                            caffeine: root.caffeine
+                            onCaffeineToggled: root.caffeine = !root.caffeine
                         }
                     }
                     Component { id: audioPanelComp; AudioPanel { skin: pal } }
@@ -718,5 +722,23 @@ ShellRoot {
                 }
             }
         }
+    }
+
+    // ---- Caffeine (keep-awake): a Wayland idle inhibitor on a dedicated, always-mapped overlay
+    //      surface. The bar hides in fullscreen, so the inhibitor lives on its OWN tiny click-through
+    //      overlay window instead - that way keep-awake also holds during fullscreen video (the whole
+    //      point). One global inhibitor is enough (idle is seat-wide). ----
+    PanelWindow {
+        id: caffeineWin
+        visible: root.caffeine
+        WlrLayershell.namespace: "quickshell-hyprslob-caffeine"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        exclusionMode: ExclusionMode.Ignore
+        color: "transparent"
+        anchors { top: true; left: true }
+        implicitWidth: 1; implicitHeight: 1
+        mask: Region {}   // empty input region -> fully click-through
+        IdleInhibitor { enabled: root.caffeine; window: caffeineWin }
     }
 }

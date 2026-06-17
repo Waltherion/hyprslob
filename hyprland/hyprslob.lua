@@ -17,6 +17,8 @@ hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob tog
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob launcher"))
 -- Open the power menu (toggle); q/w/e/r/t pick lock/sleep/log out/restart/shut down
 hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob power"))
+-- Toggle caffeine / keep-awake (Wayland idle inhibitor); also a coffee button in the system panel
+hl.bind(mainMod .. " + CTRL + C", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob caffeine"))
 -- Open a Level-2 panel directly on the focused monitor
 hl.bind(mainMod .. " + CTRL + 1", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob select system"))
 hl.bind(mainMod .. " + CTRL + 2", hl.dsp.exec_cmd("qs -c hyprslob ipc call hyprslob select audio"))

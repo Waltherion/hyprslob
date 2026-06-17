@@ -42,10 +42,13 @@ Column {
     property string kernel: ""
     property string osName: "Linux"
     property string activeApp: ""
+    property bool caffeine: false       // keep-awake state (owned by shell.qml)
+    signal caffeineToggled()
 
     readonly property color fg: skin ? skin.text : "#ffffff"
     readonly property color ac: skin ? skin.accent : "#ffffff"
     readonly property color hl: skin ? skin.highlight : "#ffffff"
+    readonly property color bg: skin ? skin.background : "#000000"
     readonly property color dim: Qt.rgba(fg.r, fg.g, fg.b, 0.55)
     readonly property string fam: skin ? skin.fontFamily : "Poppins"
 
@@ -88,6 +91,34 @@ Column {
                 spacing: 1
                 Text { text: sp.osName; color: sp.fg; font.family: sp.fam; font.pixelSize: 14; font.weight: 600 }
                 Text { text: sp.kernel; color: sp.dim; font.family: sp.fam; font.pixelSize: 11 }
+            }
+        }
+        // Caffeine (keep-awake) toggle - small round coffee button just right of the OS info.
+        Rectangle {
+            id: caffeineBtn
+            // right-aligned (big gap from the OS info); sits left of the battery when it's shown (laptop)
+            anchors.right: batRow.visible ? batRow.left : parent.right
+            anchors.rightMargin: batRow.visible ? 12 : 0
+            anchors.verticalCenter: parent.verticalCenter
+            width: 26; height: 26; radius: width / 2
+            readonly property bool on: sp.caffeine
+            color: caffeineBtn.on ? sp.acAt(mapToItem(null, width / 2, 0).x)
+                                  : Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, cma.containsMouse ? 0.16 : 0.07)
+            border.width: 1
+            border.color: caffeineBtn.on ? "transparent"
+                                         : Qt.rgba(sp.fg.r, sp.fg.g, sp.fg.b, cma.containsMouse ? 0.35 : 0.18)
+            Behavior on color { ColorAnimation { duration: 130 } }
+            scale: cma.containsMouse ? 1.08 : 1.0
+            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+            Text {
+                anchors.centerIn: parent
+                text: String.fromCharCode(0xf0f4)   // coffee mug (Nerd Font) = keep-awake
+                font.family: "Symbols Nerd Font"; font.pixelSize: 13
+                color: caffeineBtn.on ? Qt.rgba(sp.bg.r, sp.bg.g, sp.bg.b, 1) : sp.fg
+            }
+            MouseArea {
+                id: cma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                onClicked: sp.caffeineToggled()
             }
         }
         // Battery: hidden on machines without one (sp.bat stays -1). Bolt shows while charging.

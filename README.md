@@ -61,7 +61,9 @@ into that panel - one cohesive surface, never loose floating widgets.
 - **Menu** - a config-driven action palette of your own commands. Only appears once you've set
   `actions` in your config (see [Custom menus & dmenu](#custom-menus--dmenu)).
 - **System** - OS + kernel, CPU/RAM/GPU usage & temps, focused window, system tray
-  (left-click = activate, middle-click = hard-close the app, right-click = its menu).
+  (left-click = activate, middle-click = hard-close the app, right-click = its menu). A small
+  caffeine (keep-awake) toggle sits by the OS name - it holds a Wayland idle inhibitor that survives
+  fullscreen; also bindable via the `caffeine` IPC.
 - **Audio** - media controls (MPRIS), volume slider, mute, output switcher (PipeWire).
 - **Network** - Wi-Fi & Bluetooth toggles + device list.
 - **Notifications** - history, do-not-disturb, clear-all (HyprSlob is the notification daemon).
