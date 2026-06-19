@@ -117,6 +117,15 @@ label <TAB> /path/to/preview.png <TAB> #rrggbb,#rrggbb,...
 Under the hood it calls `qs -c hyprslob ipc call hyprslob menu <choicesFile> <resultFile> <prompt>`;
 the wrapper just handles the temp-file plumbing and waits for the result.
 
+**Wallpaper grid.** A sibling `wallpapers` IPC opens a scrollable thumbnail *grid* (arrow keys +
+Enter) instead of a list - handy for picking an image. Feed it tab-separated
+`label <TAB> /path/to/thumbnail <TAB> /path/to/wallpaper` lines; the chosen wallpaper's path is
+written to the result file:
+
+```sh
+qs -c hyprslob ipc call hyprslob wallpapers <choicesFile> <resultFile>
+```
+
 ## Make it yours
 
 Appearance is **fully config-driven** - colors, rainbow gradient, corner radius, border, bloom,

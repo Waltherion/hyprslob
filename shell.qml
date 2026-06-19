@@ -31,6 +31,7 @@ ShellRoot {
     property bool caffeine: false   // keep-awake (Wayland idle inhibitor); toggled from the system panel
     signal hubIpc(string action, string key)
     signal dmenuRequest(string choicesPath, string resultPath, string prompt)
+    signal wallpapersRequest(string choicesPath, string resultPath)
     IpcHandler {
         target: "hyprslob"
         function toggle(): void { root.barVisible = !root.barVisible }
@@ -42,6 +43,7 @@ ShellRoot {
         function select(key: string): void { root.hubIpc("select", key) }
         function launcher(): void { root.barVisible = true; root.hubIpc("select", "launcher") }
         function menu(choicesPath: string, resultPath: string, prompt: string): void { root.barVisible = true; root.dmenuRequest(choicesPath, resultPath, prompt) }
+        function wallpapers(choicesPath: string, resultPath: string): void { root.barVisible = true; root.wallpapersRequest(choicesPath, resultPath) }
         function power(): void { root.barVisible = true; root.hubIpc("toggleKey", "power") }   // power menu (Super+Esc); q/w/e/r/t pick
         function caffeine(): void { root.caffeine = !root.caffeine }   // toggle keep-awake (optional keybind)
     }
@@ -230,7 +232,7 @@ ShellRoot {
             // Only this term is behaviored; the launcher field is loaded + focused instantly, so typing
             // isn't blocked while the box unfolds (it just clips the width in).
             property real level2AnimW: win.hubActive === "launcher" ? win.launcherW
-                                     : (win.hubActive === "dmenu" || win.hubActive === "menu") ? (l2.item ? l2.item.implicitWidth : win.level2W)
+                                     : (win.hubActive === "dmenu" || win.hubActive === "menu" || win.hubActive === "wallpapers") ? (l2.item ? l2.item.implicitWidth : win.level2W)
                                      : win.hubActive !== "" ? win.level2W : 0
             Behavior on level2AnimW { NumberAnimation { duration: 300; easing.type: Easing.InOutCubic } }
             // Animate the level-1 (button row) width too, so the box eases wider before morphing down
@@ -244,7 +246,7 @@ ShellRoot {
             property int expandLevel: 0
             property string hubActive: ""
             // dmenu/menu/launcher are "modal" input modes - they don't auto-collapse on hover-leave.
-            readonly property bool modalMode: hubActive === "dmenu" || hubActive === "menu" || hubActive === "launcher"
+            readonly property bool modalMode: hubActive === "dmenu" || hubActive === "menu" || hubActive === "launcher" || hubActive === "wallpapers"
             onExpandLevelChanged: { if (win.expandLevel === 0) { win.hubActive = ""; trayMenu.close(); } }
             onHubActiveChanged: { if (win.hubActive === "notif") root.unread = 0; trayMenu.close(); win.holdOpen = win.modalMode; if (win.hubActive === "power") Qt.callLater(() => pille.forceActiveFocus()); }   // opened -> read; tray menu closes; modal modes hold open; power grabs focus for q/w/e/r/t
             property bool holdOpen: false   // a tray menu is open -> don't auto-collapse the hub
@@ -298,6 +300,37 @@ ShellRoot {
                 }
                 win.expandLevel = 0;   // collapse (clears hubActive via onExpandLevelChanged)
             }
+
+            // ---- Wallpaper grid (thumbnail picker for the current theme) ----
+            property string wpResultPath: ""
+            property var wpEntries: []
+            FileView {
+                id: wpChoicesFile
+                onLoaded: win.showWallpaperPanel(win.parseWallpaperEntries(wpChoicesFile.text()))
+                onLoadFailed: win.showWallpaperPanel([])
+            }
+            function parseWallpaperEntries(text) {
+                const lines = (text || "").split("\n").filter(l => l.length > 0);
+                return lines.map(l => { const p = l.split("\t"); return { label: p[0], image: (p[1] || ""), path: (p[2] || "") }; });
+            }
+            function openWallpapers(choicesPath, resultPath) {
+                win.wpResultPath = resultPath;
+                wpChoicesFile.path = choicesPath;
+                wpChoicesFile.reload();
+            }
+            function showWallpaperPanel(entries) {
+                win.wpEntries = entries;
+                win.expandLevel = 1;
+                win.hubActive = "wallpapers";
+            }
+            function finishWallpapers(path) {   // chosen full path, or "" on cancel
+                if (win.wpResultPath.length) {
+                    dmResultFile.path = win.wpResultPath;
+                    dmResultFile.setText(path);
+                    win.wpResultPath = "";
+                }
+                win.expandLevel = 0;
+            }
             // Config-driven action palette (the menu button).
             readonly property var menuEntries: (cfg.actions || []).map(a => ({ label: a.label }))
             function runAction(label) {
@@ -322,6 +355,10 @@ ShellRoot {
                 function onDmenuRequest(choicesPath, resultPath, prompt) {
                     if (!win.isFocused) return;   // show only on the focused monitor
                     win.openDmenu(choicesPath, resultPath, prompt);
+                }
+                function onWallpapersRequest(choicesPath, resultPath) {
+                    if (!win.isFocused) return;
+                    win.openWallpapers(choicesPath, resultPath);
                 }
             }
             readonly property real expandedBoxW: boxPadH * 2 + Math.max(clockRow.implicitWidth, level1.implicitWidth, level2W) + 16
@@ -487,6 +524,7 @@ ShellRoot {
                                            : win.hubActive === "launcher" ? launcherPanelComp
                                            : win.hubActive === "dmenu" ? dmenuPanelComp
                                            : win.hubActive === "menu" ? menuPanelComp
+                                           : win.hubActive === "wallpapers" ? wallpaperPanelComp
                                            : comingSoonComp
                         }
                     }
@@ -514,6 +552,7 @@ ShellRoot {
                     Component { id: launcherPanelComp; LauncherPanel { skin: pal; width: win.launcherW; maxResults: cfg.launcherMaxResults; onPanelClose: win.expandLevel = 0 } }
                     Component { id: dmenuPanelComp; DmenuPanel { skin: pal; entries: win.dmEntries; prompt: win.dmPrompt; maxResults: cfg.dmenuMaxResults; plainW: cfg.dmenuWidth; previewPaneW: 360; previewListW: cfg.dmenuPreviewWidth - 372; onChosen: (label) => win.finishDmenu(label); onCancelled: win.finishDmenu("") } }
                     Component { id: menuPanelComp; DmenuPanel { skin: pal; entries: win.menuEntries; prompt: "Menu"; searchable: false; maxResults: cfg.dmenuMaxResults; plainW: cfg.menuWidth; onChosen: (label) => win.runAction(label); onCancelled: win.expandLevel = 0 } }
+                    Component { id: wallpaperPanelComp; WallpaperPanel { skin: pal; entries: win.wpEntries; onChosen: (path) => win.finishWallpapers(path); onCancelled: win.finishWallpapers("") } }
                     Component {
                         id: comingSoonComp
                         Text {
