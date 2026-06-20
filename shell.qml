@@ -562,20 +562,30 @@ ShellRoot {
                     }
                 }
 
-                // ---- Bloom: blurred copy of the clock BEHIND the sharp text -> glow.
-                //      Zero-cost: the Loader does NOT create the MultiEffect object at all when bloom=0. ----
-                Loader {
-                    id: bloomLoader
-                    active: pal.bloom > 0.0
-                    x: clockRow.x; y: clockRow.y
-                    width: clockRow.width; height: clockRow.height
-                    sourceComponent: MultiEffect {
-                        source: clockRow
-                        anchors.fill: parent
-                        autoPaddingEnabled: true
-                        blurEnabled: true
-                        blur: 1.0
-                        blurMax: Math.round(48 * pal.bloom)
+                // ---- Bloom: blurred copy of the clock BEHIND the sharp text -> glow. CLIPPED to the
+                //      bar box so the glow stays INSIDE the bar. In HDR the SDR->HDR mapping amplifies
+                //      the soft glow; unclipped it bleeds far outside the bar as a bright halo (on a
+                //      black SDR desktop the same overflow is dark and invisible). Zero-cost at bloom=0. ----
+                Item {
+                    id: bloomClip
+                    visible: pal.bloom > 0.0
+                    x: clockBox.x; y: win.boxTop
+                    width: clockBox.width; height: win.boxH
+                    clip: true
+                    Loader {
+                        id: bloomLoader
+                        active: pal.bloom > 0.0
+                        x: clockRow.x - bloomClip.x
+                        y: clockRow.y - bloomClip.y
+                        width: clockRow.width; height: clockRow.height
+                        sourceComponent: MultiEffect {
+                            source: clockRow
+                            anchors.fill: parent
+                            autoPaddingEnabled: true
+                            blurEnabled: true
+                            blur: 1.0
+                            blurMax: Math.round(48 * pal.bloom)
+                        }
                     }
                 }
 
