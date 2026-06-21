@@ -77,7 +77,20 @@ Column {
     }
     onFilteredChanged: if (lp.sel >= filtered.length) lp.sel = Math.max(0, filtered.length - 1);
 
-    function launch(a) { if (!a) return; lp.bump(a); a.execute(); lp.panelClose(); }
+    // Terminal-apps (Terminal=true, fx btop/htop) har ingen GUI — Quickshells execute() kan
+    // ikke vise dem uden en terminal. Pak dem i $TERMINAL (fallback kitty) så de åbner i et vindue.
+    function launch(a) {
+        if (!a) return;
+        lp.bump(a);
+        if (a.runInTerminal) {
+            const term = Quickshell.env("TERMINAL") || "kitty";
+            const cmd = (a.command && a.command.length) ? a.command.join(" ") : (a.exec || a.name);
+            Quickshell.execDetached([term, "-e", "sh", "-c", cmd]);
+        } else {
+            a.execute();
+        }
+        lp.panelClose();
+    }
 
     Component.onCompleted: {
         Quickshell.execDetached(["mkdir", "-p", Quickshell.env("HOME") + "/.local/state/hyprslob"]);
