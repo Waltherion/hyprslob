@@ -13,6 +13,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.Notifications
+import Quickshell.Services.Mpris
 
 ShellRoot {
     id: root
@@ -46,6 +47,39 @@ ShellRoot {
         function wallpapers(choicesPath: string, resultPath: string): void { root.barVisible = true; root.wallpapersRequest(choicesPath, resultPath) }
         function power(): void { root.barVisible = true; root.hubIpc("toggleKey", "power") }   // power menu (Super+Esc); q/w/e/r/t pick
         function caffeine(): void { root.caffeine = !root.caffeine }   // toggle keep-awake (optional keybind)
+    }
+
+    // ---- MRU media player. Remember the dbusName of the last control-capable MPRIS player that
+    //      STARTED playing, and keep it - even when it (and everything else) pauses - so the audio
+    //      panel sticks to the last-active source instead of defaulting to some other player. Only
+    //      changes when a different control-capable player starts playing, or the active one closes.
+    //      Lives at root (always alive) so it persists across panel open/close and browser-side pauses.
+    property string mprisActiveName: ""
+    property var mprisWasPlaying: ({})
+    Timer {
+        interval: 1000; repeat: true; triggeredOnStart: true
+        running: Mpris.players ? Mpris.players.values.length > 0 : false
+        onTriggered: {
+            // Source players = real controllable apps, tracked by their STABLE dbusName. Drop the
+            // playerctld proxy and the plasma-browser-integration metadata mirrors. Do NOT filter by
+            // canGoNext - browsers set it false while paused, which would make a paused source vanish
+            // from the pool and wrongly trigger a re-pick.
+            const ps = Mpris.players.values.filter(p => p
+                && (p.dbusName || "").indexOf("playerctld") < 0
+                && (p.dbusName || "").indexOf("plasma-browser-integration") < 0);
+            const w = ({});
+            for (let i = 0; i < ps.length; i++) {
+                const n = ps[i].dbusName || "";
+                if (ps[i].isPlaying && !root.mprisWasPlaying[n]) root.mprisActiveName = n;   // just started -> active
+                w[n] = ps[i].isPlaying;
+            }
+            root.mprisWasPlaying = w;
+            // Keep the active player as long as it still EXISTS (paused is fine); re-pick only if it's gone.
+            if (!ps.some(p => (p.dbusName || "") === root.mprisActiveName)) {
+                const playing = ps.filter(p => p.isPlaying);
+                root.mprisActiveName = ((playing[0] || ps[0] || ({})).dbusName) || "";
+            }
+        }
     }
 
     // ---- Clock ----
@@ -544,7 +578,7 @@ ShellRoot {
                             onCaffeineToggled: root.caffeine = !root.caffeine
                         }
                     }
-                    Component { id: audioPanelComp; AudioPanel { skin: pal } }
+                    Component { id: audioPanelComp; AudioPanel { skin: pal; activeName: root.mprisActiveName } }
                     Component { id: netPanelComp; NetPanel { skin: pal } }
                     Component { id: notifPanelComp; NotifPanel { skin: pal; srv: server; dnd: root.dnd
                         onDndToggled: root.dnd = !root.dnd; onClearAllRequested: root.clearAllNotifs() } }

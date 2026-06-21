@@ -16,38 +16,65 @@ Column {
     readonly property color dim: Qt.rgba(fg.r, fg.g, fg.b, 0.55)
     readonly property string fam: skin ? skin.fontFamily : "Poppins"
 
-    // Active media player. A browser can expose several MPRIS players for the SAME tab: its native
-    // one (app-shell metadata - title is the app name, no artist, a generic browser-icon artUrl) and
-    // plasma-browser-integration (the real song title, artist and cover). They all report CanGoNext,
-    // so we can't pick by transport alone - rank by metadata richness (a real artist wins) and prefer
-    // a currently-playing one. The playerctld proxy just mirrors another player, so we drop it.
+    // A browser exposes several MPRIS players for the SAME tab: the NATIVE one (working transport +
+    // seek, but poor metadata - generic title, no artist) and plasma-browser-integration (rich title/
+    // artist/cover, but BROKEN transport: canGoNext=false and a bogus length/position). Picking one
+    // can't satisfy both, so we DECOUPLE: `player` drives transport + seek, `metaPlayer` drives title/
+    // artist/cover. The selected control player is STICKY (MRU): `activeName` comes from shell.qml,
+    // which remembers the last source that played, so pausing everything doesn't jump to another
+    // player. The playerctld proxy just mirrors another player, so we drop it.
+    property string activeName: ""   // MRU last-active dbusName (from shell.qml; sticky on pause)
+    readonly property var _players: (Mpris.players && Mpris.players.values)
+        ? Mpris.players.values.filter(p => p && (p.dbusName || "").indexOf("playerctld") < 0) : []
+    // control player = the sticky MRU one; else a playing control-capable player, else any control, else any.
     readonly property var player: {
-        if (!Mpris.players || !Mpris.players.values.length) return null;
-        const v = Mpris.players.values.filter(p => p && (p.dbusName || "").indexOf("playerctld") < 0);
-        if (!v.length) return null;
-        const pool = v.some(p => p.isPlaying) ? v.filter(p => p.isPlaying) : v;
-        const score = p => (p.trackArtist && p.trackArtist.length ? 2 : 0) + (p.canGoNext ? 1 : 0);
-        return pool.slice().sort((a, b) => score(b) - score(a))[0];
+        if (!ap._players.length) return null;
+        // sticky: the MRU active player by dbusName, even when paused (its canGoNext may be false then)
+        const active = ap._players.find(p => (p.dbusName || "") === ap.activeName);
+        if (active) return active;
+        const ctl = ap._players.filter(p => p.canGoNext);
+        const pool = ctl.length ? ctl : ap._players;
+        return pool.filter(p => p.isPlaying)[0] || pool[0];
+    }
+    // metadata player = a rich-artist player for the SAME song (its title is part of the control title),
+    // else the control player itself - never borrow an unrelated source's title/artist.
+    readonly property var metaPlayer: {
+        if (!ap.player) return null;
+        const ct = ap.player.trackTitle || "";
+        const rich = ap._players.filter(p => p !== ap.player && p.trackArtist && p.trackArtist.length && p.trackTitle);
+        return rich.find(p => ct && ct.indexOf(p.trackTitle) >= 0) || ap.player;
     }
 
     // Live position for the seek bar (MPRIS doesn't push position; poll while the panel is open).
     property real pos: 0
 
-    // Album art is flaky over MPRIS. The browser's native player exposes a generic browser-icon
-    // artUrl while plasma-browser-integration caches the real cover to a local file (but only
-    // populates it after a play-state event, so it's briefly absent on a track change). We take the
-    // selected player's art first, else fall back to art from any player WITH a real artist (never
-    // the app-shell's icon), and KEEP the last good one until a new one arrives (no mid-song blank).
+    // Album art is flaky over MPRIS: a browser's native player often has no/generic art, while
+    // plasma-browser-integration caches the real cover for the SAME tab to a local file. So we pair
+    // art by TITLE: take the cover from a sibling player whose title matches the active source (then
+    // the meta player, then the control player). We NEVER borrow an unrelated source's cover - that
+    // showed YT Music's art under a video. Reset on song/source change; keep last good within a song
+    // (the cached cover can arrive a beat late, so this avoids a mid-song blank).
+    //
+    // FUTURE CONSIDERATION: YT Music via plasma-browser-integration only PUBLISHES its cover after a
+    // PlaybackStatus toggle - on auto-advance (and next/seek/waiting) the new song's art never arrives,
+    // so it shows the glyph until you manually pause/play. Empirically only a Playing->Paused->Playing
+    // toggle triggers the fetch (a seek does not). An opt-in "cover nudge" that does a brief auto
+    // pause/play on a new song could force it, but it costs a ~0.3s audible gap per track, so it is
+    // deliberately NOT enabled. Could be a config flag (default off) one day.
     property string artUrl: ""
+    property string _artKey: ""
     function refreshArt() {
-        let u = (ap.player && ap.player.trackArtUrl) ? ap.player.trackArtUrl : "";
-        if (!u && Mpris.players) {
-            const v = Mpris.players.values;
-            let best = v.find(p => p && p.trackArtUrl && p.trackArtist && p.trackArtist.length);
-            if (!best) best = v.find(p => p && p.trackArtUrl);
-            if (best) u = best.trackArtUrl;
+        const ct = ap.player ? (ap.player.trackTitle || "") : "";
+        let u = "";
+        if (ct) {
+            const sib = ap._players.find(p => p !== ap.player && p.trackArtUrl && p.trackTitle && ct.indexOf(p.trackTitle) >= 0);
+            if (sib) u = sib.trackArtUrl;
         }
-        if (u && u !== ap.artUrl) ap.artUrl = u;
+        if (!u && ap.metaPlayer && ap.metaPlayer.trackArtUrl) u = ap.metaPlayer.trackArtUrl;
+        if (!u && ap.player && ap.player.trackArtUrl) u = ap.player.trackArtUrl;
+        const key = ap.player ? ((ap.player.dbusName || "") + "|" + ct) : "";
+        if (key !== ap._artKey) { ap._artKey = key; ap.artUrl = u; }   // new song/source -> reset (may briefly blank)
+        else if (u && u !== ap.artUrl) ap.artUrl = u;                  // same song -> fill in when the cover arrives
     }
 
     Timer {
@@ -110,12 +137,12 @@ Column {
                 ColumnLayout {
                     Layout.fillWidth: true; spacing: 1
                     Text {
-                        text: ap.player ? (ap.player.trackTitle || "Unknown") : ""
+                        text: ap.metaPlayer ? (ap.metaPlayer.trackTitle || "Unknown") : ""
                         color: ap.fg; font.family: ap.fam; font.pixelSize: 12; font.weight: 600
                         elide: Text.ElideRight; Layout.fillWidth: true
                     }
                     Text {
-                        text: ap.player ? (ap.player.trackArtist || "") : ""
+                        text: ap.metaPlayer ? (ap.metaPlayer.trackArtist || "") : ""
                         color: ap.dim; font.family: ap.fam; font.pixelSize: 10
                         elide: Text.ElideRight; Layout.fillWidth: true
                     }
