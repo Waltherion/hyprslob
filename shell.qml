@@ -33,7 +33,6 @@ ShellRoot {
     signal hubIpc(string action, string key)
     signal dmenuRequest(string choicesPath, string resultPath, string prompt)
     signal wallpapersRequest(string choicesPath, string resultPath)
-    signal closeRequest()
     IpcHandler {
         target: "hyprslob"
         function toggle(): void { root.barVisible = !root.barVisible }
@@ -46,7 +45,6 @@ ShellRoot {
         function launcher(): void { root.barVisible = true; root.hubIpc("select", "launcher") }
         function menu(choicesPath: string, resultPath: string, prompt: string): void { root.barVisible = true; root.dmenuRequest(choicesPath, resultPath, prompt) }
         function wallpapers(choicesPath: string, resultPath: string): void { root.barVisible = true; root.wallpapersRequest(choicesPath, resultPath) }
-        function close(): void { root.closeRequest() }   // close the focused picker/panel cleanly (toggle-picker.sh; no synthetic Escape -> no lock-screen collision)
         function power(): void { root.barVisible = true; root.hubIpc("toggleKey", "power") }   // power menu (Super+Esc); q/w/e/r/t pick
         function caffeine(): void { root.caffeine = !root.caffeine }   // toggle keep-awake (optional keybind)
     }
@@ -395,14 +393,6 @@ ShellRoot {
                 function onWallpapersRequest(choicesPath, resultPath) {
                     if (!win.isFocused) return;
                     win.openWallpapers(choicesPath, resultPath);
-                }
-                function onCloseRequest() {
-                    if (!win.isFocused) return;
-                    // Close cleanly: CANCEL an open picker (writes an empty result so qs-dmenu / the
-                    // launcher script unblocks and its lock file clears); otherwise just collapse the hub.
-                    if (win.hubActive === "dmenu") win.finishDmenu("");
-                    else if (win.hubActive === "wallpapers") win.finishWallpapers("");
-                    else win.expandLevel = 0;
                 }
             }
             readonly property real expandedBoxW: boxPadH * 2 + Math.max(clockRow.implicitWidth, level1.implicitWidth, level2W) + 16
