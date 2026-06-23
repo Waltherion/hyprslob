@@ -193,6 +193,14 @@ ShellRoot {
     property bool dnd: false
     property int unread: 0          // unread notifications (badge on notif button); reset when the panel is opened
     property var popups: []
+    // Startup-race guard for the popup Repeater (below). A notification delivered while that
+    // Repeater is still incubating async makes Qt run setModel -> regenerate -> incubate a NotifCard
+    // delegate in a half-built context and SIGSEGV (hit reliably when a restart/theme-switch races a
+    // notify-send). Keep the popup model empty until just after the shell tree is built; any
+    // notification that lands in that window is still tracked (history) and pops in once it opens.
+    property bool popupsReady: false
+    Component.onCompleted: popupsReadyTimer.start()
+    Timer { id: popupsReadyTimer; interval: 250; onTriggered: root.popupsReady = true }
     function dropPopup(n) { root.popups = root.popups.filter(x => x !== n); }
     function clearAllNotifs() {
         const arr = server.trackedNotifications.values.slice();
@@ -797,7 +805,7 @@ ShellRoot {
                 anchors { top: parent.top; left: parent.left; right: parent.right }
                 spacing: 8
                 Repeater {
-                    model: root.popups
+                    model: root.popupsReady ? root.popups : []
                     delegate: NotifCard {
                         required property var modelData
                         width: parent.width
