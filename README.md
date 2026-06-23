@@ -9,7 +9,7 @@ built with [Quickshell](https://quickshell.org/). One cohesive pill at the top t
 **morphs and expands downward** into a hub of panels - no loose widgets.
 
 <p align="center">
-  <img src="screenshots/11-fullDesktopSound.jpg" width="760" alt="HyprSlob on the desktop">
+  <img src="screenshots/desktop/trueBlackOrange.jpg" width="760" alt="HyprSlob on the desktop">
 </p>
 
 ### Showcase
@@ -28,7 +28,7 @@ See it in motion - the morph, the visualizer, the launcher and the panels:
 
 Collapsed, it's intentionally minimal - `Time | Day | Date`:
 
-<p align="center"><img src="screenshots/01-noSoundStandard.png" width="420" alt="Collapsed pill"></p>
+<p align="center"><img src="screenshots/bar/day.png" width="420" alt="Collapsed pill"></p>
 
 But it does two things most bars don't:
 
@@ -39,7 +39,7 @@ the music, right inside the pill - powered by [cava](https://github.com/karlstav
 by your rainbow gradient. It follows whatever output you're actually using (headphones included),
 and it costs nothing when idle or switched off.
 
-<p align="center"><img src="screenshots/02-soundStandard.png" width="440" alt="Audio visualizer in the pill"></p>
+<p align="center"><img src="screenshots/bar/themes/trueBlackOrange.png" width="440" alt="Audio visualizer in the pill"></p>
 
 ### Inline workspace indicator
 
@@ -47,14 +47,14 @@ One side field (`Time` or `Date`) **crossfades into workspace dots** on demand -
 workspace is a large accent dot, the rest dimmed. Show them on workspace switch, on hover, both,
 or always; the dots can ride the rainbow gradient too. No separate widget, no layout shift.
 
-<p align="center"><img src="screenshots/03-soundWorkspace.png" width="500" alt="Workspace dots in the pill"></p>
+<p align="center"><img src="screenshots/bar/workspace.png" width="500" alt="Workspace dots in the pill"></p>
 
 ## The hub
 
 Hover the pill and it expands downward into a row of buttons; click one and the pill morphs further
 into that panel - one cohesive surface, never loose floating widgets.
 
-<p align="center"><img src="screenshots/04-level1Morph.png" width="470" alt="The hub buttons"></p>
+<p align="center"><img src="screenshots/hub.png" width="470" alt="The hub buttons"></p>
 
 - **Launcher** - the bar morphs into a fuzzy app launcher (fuzzy + frecency ranking, keyboard-first).
   Bind a key (e.g. `Super+Space`) to open it instantly via `ipc call hyprslob launcher`.
@@ -74,14 +74,14 @@ into that panel - one cohesive surface, never loose floating widgets.
 
 <table align="center">
   <tr>
-    <td align="center"><img src="screenshots/05-system.png" width="250"><br><sub>System</sub></td>
-    <td align="center"><img src="screenshots/06-audio.png" width="250"><br><sub>Audio</sub></td>
-    <td align="center"><img src="screenshots/07-connectivity.png" width="250"><br><sub>Network</sub></td>
+    <td align="center"><img src="screenshots/panels/00-launcher.png" width="250"><br><sub>Launcher</sub></td>
+    <td align="center"><img src="screenshots/panels/02-system.png" width="250"><br><sub>System</sub></td>
+    <td align="center"><img src="screenshots/panels/04-audio.png" width="250"><br><sub>Audio</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/08-notifications.png" width="250"><br><sub>Notifications</sub></td>
-    <td align="center"><img src="screenshots/09-powerMenu.png" width="250"><br><sub>Power</sub></td>
-    <td></td>
+    <td align="center"><img src="screenshots/panels/05-connections.png" width="250"><br><sub>Network</sub></td>
+    <td align="center"><img src="screenshots/panels/06-notifications.png" width="250"><br><sub>Notifications</sub></td>
+    <td align="center"><img src="screenshots/panels/07-power.png" width="250"><br><sub>Power</sub></td>
   </tr>
 </table>
 
@@ -108,6 +108,8 @@ Pipe newline-separated choices in, get the selection on stdout - the picker rend
 choice=$(printf '%s\n' Alpha Bravo Charlie | qs-dmenu --prompt 'Pick: ')
 ```
 
+<p align="center"><img src="screenshots/panels/01-dmenu.png" width="440" alt="The dmenu picker rendered in the bar"></p>
+
 Items may carry an **image + colour preview** (tab-separated, shown in a side pane):
 
 ```
@@ -129,23 +131,56 @@ qs -c hyprslob ipc call hyprslob wallpapers <choicesFile> <resultFile>
 ## Make it yours
 
 Appearance is **fully config-driven** - colors, rainbow gradient, corner radius, border, bloom,
-font, opacity - live-reloaded from a single JSONC file. No theme system required. The same bar,
-restyled:
+font, opacity - live-reloaded from a single JSONC file. No theme system required. Every pill below
+is the same bar - only the config differs:
 
 <table align="center">
   <tr>
-    <td align="center"><img src="screenshots/12-otherDesignExample1.png" width="330"><br><sub>Blue</sub></td>
-    <td align="center"><img src="screenshots/13-otherDesignExample2.png" width="330"><br><sub>Teal / rainbow</sub></td>
+    <td align="center"><img src="screenshots/bar/themes/Synthwave.png" width="370"><br><sub>Synthwave</sub></td>
+    <td align="center"><img src="screenshots/bar/themes/colorPuke.png" width="370"><br><sub>Color Puke</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/14-otherDesignExample3.png" width="330"><br><sub>Purple</sub></td>
-    <td align="center"><img src="screenshots/15-otherDesignExample4.png" width="330"><br><sub>Monochrome</sub></td>
+    <td align="center"><img src="screenshots/bar/themes/trueBlackOrange.png" width="370"><br><sub>True Black Orange</sub></td>
+    <td align="center"><img src="screenshots/bar/themes/blackGold.png" width="370"><br><sub>Black Gold</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/bar/themes/purplePalette.png" width="370"><br><sub>Purple</sub></td>
+    <td align="center"><img src="screenshots/bar/themes/hacker.png" width="370"><br><sub>Hacker</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/bar/themes/glacier.png" width="370"><br><sub>Glacier</sub></td>
+    <td align="center"><img src="screenshots/bar/themes/forrestZen.png" width="370"><br><sub>Forrest Zen</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/bar/themes/Cachyboo.png" width="370"><br><sub>Cachyboo</sub></td>
+    <td align="center"><img src="screenshots/bar/themes/Dweeb.png" width="370"><br><sub>Dweeb</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/bar/themes/archBtw.png" width="370"><br><sub>Arch BTW</sub></td>
+    <td align="center"><img src="screenshots/bar/themes/neutral.png" width="370"><br><sub>Neutral</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/bar/themes/monochromeMinimalism.png" width="370"><br><sub>Monochrome</sub></td>
+    <td></td>
   </tr>
 </table>
 
 Also: **zero-cost static mode** (turn off rainbow, bloom and the visualizer and there are no
 animation repaint loops at all), per-monitor, auto-hides in fullscreen, and it reserves space like
 a normal bar.
+
+And the same bar living on a few different desktops:
+
+<table align="center">
+  <tr>
+    <td align="center"><img src="screenshots/desktop/blackGold.jpg" width="380"></td>
+    <td align="center"><img src="screenshots/desktop/colorPuke.jpg" width="380"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/desktop/purple.jpg" width="380"></td>
+    <td align="center"><img src="screenshots/desktop/btw.jpg" width="380"></td>
+  </tr>
+</table>
 
 ## Requirements
 
