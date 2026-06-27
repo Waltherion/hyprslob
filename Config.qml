@@ -16,8 +16,8 @@ Item {
         "bloom": 0.0,               // glow strength 0..1 (x48px blur); 0 = off (free)
         "opacity": 1.0,             // whole-pill opacity 0..1
         "scale": 1.0,               // whole-pill scale
-        "cornerRadius": 14,         // pill corner radius (px)
-        "borderWidth": 0,           // pill border width (px); 0 = no border
+        "cornerRadius": 0,          // pill corner radius (px); 0 = sharp box (monochrome-minimalism default)
+        "borderWidth": 1,           // pill border width (px); 0 = no border
         "hasBox": true,             // false = no pill background box (text only)
         "showVisualizer": false,    // true = Day morphs to the cava visualizer when audio plays
         "wsSide": "date",           // which side field shows the workspace dots: "time" | "date"

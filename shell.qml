@@ -26,6 +26,19 @@ ShellRoot {
     Config { id: cfg }
     Skin { id: pal; cfg: cfg; phase: root.rainbowPhase }
 
+    // First-launch config seed: if ~/.config/hyprslob/config.jsonc does not exist (neither a
+    // regular file nor a symlink), drop the fully-commented default there so a fresh user has a
+    // self-documenting file to edit. Never clobbers an existing file or symlink (so a theme
+    // symlink is untouched). Mirrors install.sh, but works without running the installer.
+    Process {
+        running: true
+        command: ["sh", "-c",
+            "f=\"$HOME/.config/hyprslob/config.jsonc\"; " +
+            "d=\"$HOME/.config/quickshell/hyprslob/config.default.jsonc\"; " +
+            "if [ ! -e \"$f\" ] && [ ! -L \"$f\" ] && [ -f \"$d\" ]; then " +
+            "mkdir -p \"$(dirname \"$f\")\" && cp \"$d\" \"$f\"; fi"]
+    }
+
     // Hide/show (Super+B). Hub state (expandLevel/hubActive) is PER-MONITOR (on win) - hover controls
     // per screen; IPC sends a signal that ONLY the focused screen reacts to.
     property bool barVisible: true

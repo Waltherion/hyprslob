@@ -14,7 +14,8 @@ QtObject {
     property var cfg              // Config instance
 
     // ---- Built-in default palette (the single fallback if config is gone) ----
-    readonly property color defBackground: "#cc000000"
+    // Matches the "monochrome-minimalism" look: opaque black box, white text/accent/border.
+    readonly property color defBackground: "#000000"
     readonly property color defText: "#ffffff"
     readonly property color defAccent: "#ffffff"
     readonly property color defBorder: "#ffffff"
@@ -72,12 +73,12 @@ QtObject {
     }
 
     // ---- Shape / glow / opacity / font (all from config, with defaults) ----
-    readonly property real radius:      (cfg && typeof cfg.cornerRadius === "number") ? cfg.cornerRadius : 14
+    readonly property real radius:      (cfg && typeof cfg.cornerRadius === "number") ? cfg.cornerRadius : 0
     readonly property bool rainbow:     cfg ? (cfg.rainbow === true) : false
     readonly property real bloom:       (cfg && typeof cfg.bloom === "number") ? Math.max(0, Math.min(1, cfg.bloom)) : 0
     readonly property real uiOpacity:   cfg ? cfg.uiOpacity : 1
     readonly property real uiScale:     cfg ? cfg.uiScale : 1
-    readonly property real borderWidth: (cfg && typeof cfg.borderWidth === "number") ? cfg.borderWidth : 0
+    readonly property real borderWidth: (cfg && typeof cfg.borderWidth === "number") ? cfg.borderWidth : 1
     readonly property bool hasBox:      cfg ? cfg.hasBox : true
 
     readonly property string fontFamily: (cfg && cfg.font && cfg.font.family) ? cfg.font.family : "Poppins"

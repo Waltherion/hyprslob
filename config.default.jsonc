@@ -9,15 +9,15 @@
   // ========================================================================
 
   // ---- Pill look ----
-  // "cornerRadius": 14,        // pill corner radius in px (0 = sharp box)
-  // "borderWidth": 0,          // pill border width in px (0 = no border)
+  // "cornerRadius": 0,         // pill corner radius in px (0 = sharp box)
+  // "borderWidth": 1,          // pill border width in px (0 = no border)
   // "hasBox": true,            // false = no background box (just the text)
   // "opacity": 1.0,            // whole-pill opacity, 0..1
   // "scale": 1.0,              // whole-pill scale (1.0 = 100%)
 
   // ---- Colors ----  (omit any slot to keep its default)
   // "color": {
-  //   "background": "#cc000000",   // pill background (ARGB or RGB hex)
+  //   "background": "#000000",     // pill background (ARGB or RGB hex)
   //   "text":       "#ffffff",     // clock / labels
   //   "accent":     "#ffffff",     // active dot, badges, selected button
   //   "border":     "#ffffff",     // pill border (needs borderWidth > 0)
