@@ -15,7 +15,6 @@ Item {
         "rainbow": false,           // true = rolling rainbow text (needs "stops"); false = static (free)
         "bloom": 0.0,               // glow strength 0..1 (x48px blur); 0 = off (free)
         "opacity": 1.0,             // whole-pill opacity 0..1
-        "scale": 1.0,               // whole-pill scale
         "cornerRadius": 0,          // pill corner radius (px); 0 = sharp box (monochrome-minimalism default)
         "borderWidth": 1,           // pill border width (px); 0 = no border
         "hasBox": true,             // false = no pill background box (text only)
@@ -50,7 +49,6 @@ Item {
     readonly property bool   rainbow: d.rainbow === true
     readonly property real   bloom: typeof d.bloom === "number" ? d.bloom : 0
     readonly property real   uiOpacity: d.opacity === undefined ? 1 : Number(d.opacity)
-    readonly property real   uiScale: d.scale === undefined ? 1 : Number(d.scale)
     readonly property var    cornerRadius: d.cornerRadius   // raw number (Skin applies default if absent)
     readonly property var    borderWidth: d.borderWidth     // raw number (0 = no border)
     readonly property bool   hasBox: d.hasBox === undefined ? true : !!d.hasBox

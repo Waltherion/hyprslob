@@ -457,12 +457,12 @@ ShellRoot {
                 }
             }
             readonly property real expandedBoxW: boxPadH * 2 + Math.max(clockRow.implicitWidth, level1.implicitWidth, level2W) + 16
-            implicitWidth: Math.ceil(Math.max(contentW, expandedBoxW) * pal.uiScale)
+            implicitWidth: Math.ceil(Math.max(contentW, expandedBoxW))
             // Full screen height (top-anchored, so exclusiveZone still reserves only the bar at the
             // top). Constant -> opening a tray menu never resizes the window (no jump); the extra
             // area is transparent and click-through (masked), and gives a tall menu room to unfold.
             implicitHeight: win.screen ? win.screen.height
-                          : Math.ceil((contentH + expandExtra + expandGap + level2H) * pal.uiScale)
+                          : Math.ceil(contentH + expandExtra + expandGap + level2H)
 
             readonly property string fam: pal.fontFamily
             readonly property int wt: pal.fontWeight
@@ -529,13 +529,12 @@ ShellRoot {
 
             FontMetrics { id: fm; font.family: win.fam; font.pixelSize: win.sz; font.weight: win.wt }
 
-            // Pill wrapper: carries config-driven opacity + scaling (about the pill center)
+            // Pill wrapper: carries config-driven opacity (scale the bar via font.size, not a transform)
             Item {
                 id: pille
                 anchors.fill: parent
                 transformOrigin: Item.Center
                 opacity: pal.uiOpacity
-                scale: pal.uiScale
                 focus: true
                 Keys.onEscapePressed: win.expandLevel = 0   // Esc collapses the hub
                 // Power menu: q/w/e/r/t trigger the 5 actions (lock/sleep/log out/restart/shut down).

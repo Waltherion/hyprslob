@@ -13,7 +13,7 @@
   // "borderWidth": 1,          // pill border width in px (0 = no border)
   // "hasBox": true,            // false = no background box (just the text)
   // "opacity": 1.0,            // whole-pill opacity, 0..1
-  // "scale": 1.0,              // whole-pill scale (1.0 = 100%)
+  //                            // (to scale the whole bar, change "font" -> "size" below)
 
   // ---- Colors ----  (omit any slot to keep its default)
   // "color": {

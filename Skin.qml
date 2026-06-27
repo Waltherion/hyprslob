@@ -77,7 +77,6 @@ QtObject {
     readonly property bool rainbow:     cfg ? (cfg.rainbow === true) : false
     readonly property real bloom:       (cfg && typeof cfg.bloom === "number") ? Math.max(0, Math.min(1, cfg.bloom)) : 0
     readonly property real uiOpacity:   cfg ? cfg.uiOpacity : 1
-    readonly property real uiScale:     cfg ? cfg.uiScale : 1
     readonly property real borderWidth: (cfg && typeof cfg.borderWidth === "number") ? cfg.borderWidth : 1
     readonly property bool hasBox:      cfg ? cfg.hasBox : true
 
