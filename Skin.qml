@@ -76,6 +76,8 @@ QtObject {
     readonly property real radius:      (cfg && typeof cfg.cornerRadius === "number") ? cfg.cornerRadius : 0
     readonly property bool rainbow:     cfg ? (cfg.rainbow === true) : false
     readonly property real bloom:       (cfg && typeof cfg.bloom === "number") ? Math.max(0, Math.min(1, cfg.bloom)) : 0
+    // bloom style: "blur" = soft spread (fades at high values); "glow" = tighter + brighter/saturated (intensifies)
+    readonly property string bloomMode: (cfg && cfg.bloomMode === "glow") ? "glow" : "blur"
     readonly property real uiOpacity:   cfg ? cfg.uiOpacity : 1
     readonly property real borderWidth: (cfg && typeof cfg.borderWidth === "number") ? cfg.borderWidth : 1
     readonly property bool hasBox:      cfg ? cfg.hasBox : true

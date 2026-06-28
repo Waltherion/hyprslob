@@ -30,7 +30,8 @@
   // "stops": ["#ff5555","#ffb86c","#50fa7b","#8be9fd","#bd93f9"],  // >=2 hex stops
   // "rainbowPeriod": 420,      // px per full rainbow across the bar: lower = tighter/more, higher = stretched
   // "rainbowSpeed": 1.0,       // roll speed: 1 = ~12s/cycle, 2 = faster, 0.5 = slower, 0 = frozen, negative = reverse
-  // "bloom": 0.0,              // glow strength 0..1 (x48px blur); 0 = off (free)
+  // "bloom": 0.0,              // glow strength 0..1; 0 = off (free)
+  // "bloomMode": "blur",       // "blur" = soft spread (fades at high values); "glow" = tighter + brighter/saturated (intensifies)
 
   // ---- Clock side fields / workspaces ----
   // "wsSide": "date",          // which side field shows the workspace dots: "time" | "date"

@@ -8,6 +8,7 @@
 
 import QtQuick
 import QtQuick.Effects
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -658,16 +659,25 @@ ShellRoot {
                     }
                 }
 
-                // ---- Bloom: blurred copy of the clock BEHIND the sharp text -> glow. CLIPPED to the
-                //      bar box so the glow stays INSIDE the bar. In HDR the SDR->HDR mapping amplifies
-                //      the soft glow; unclipped it bleeds far outside the bar as a bright halo (on a
-                //      black SDR desktop the same overflow is dark and invisible). Zero-cost at bloom=0. ----
+                // ---- Bloom: blurred copy of the clock BEHIND the sharp text -> glow. MASKED to the bar
+                //      box's ROUNDED shape (an OpacityMask, not a rectangular clip) so the glow stays inside
+                //      the bar AND follows the corner radius. In HDR the SDR->HDR mapping amplifies the soft
+                //      glow; unmasked it bleeds outside the bar as a bright halo. Zero-cost at bloom=0. ----
+                Rectangle {
+                    id: bloomMask
+                    visible: false
+                    layer.enabled: true
+                    x: clockBox.x; y: win.boxTop
+                    width: clockBox.width; height: win.boxH
+                    radius: pal.radius
+                }
                 Item {
                     id: bloomClip
                     visible: pal.bloom > 0.0
                     x: clockBox.x; y: win.boxTop
                     width: clockBox.width; height: win.boxH
-                    clip: true
+                    layer.enabled: pal.bloom > 0.0
+                    layer.effect: OpacityMask { maskSource: bloomMask }
                     Loader {
                         id: bloomLoader
                         active: pal.bloom > 0.0
@@ -680,7 +690,14 @@ ShellRoot {
                             autoPaddingEnabled: true
                             blurEnabled: true
                             blur: 1.0
-                            blurMax: Math.round(48 * pal.bloom)
+                            // "blur": pure spread (energy thins out -> fades at high bloom).
+                            // "glow": tighter spread + brightness/saturation/contrast boosted by bloom,
+                            //         so it INTENSIFIES instead of fading -> clearer at high settings.
+                            readonly property bool glow: pal.bloomMode === "glow"
+                            blurMax: Math.round((glow ? 32 : 48) * pal.bloom)
+                            brightness: glow ? pal.bloom * 0.6 : 0.0
+                            saturation: glow ? pal.bloom * 0.7 : 0.0
+                            contrast:   glow ? pal.bloom * 0.3 : 0.0
                         }
                     }
                 }

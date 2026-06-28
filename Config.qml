@@ -13,7 +13,8 @@ Item {
 
     readonly property var defaults: ({
         "rainbow": false,           // true = rolling rainbow text (needs "stops"); false = static (free)
-        "bloom": 0.0,               // glow strength 0..1 (x48px blur); 0 = off (free)
+        "bloom": 0.0,               // glow strength 0..1; 0 = off (free)
+        "bloomMode": "blur",        // "blur" = soft spread (fades at high values); "glow" = tighter + brighter (intensifies)
         "opacity": 1.0,             // whole-pill opacity 0..1
         "cornerRadius": 0,          // pill corner radius (px); 0 = sharp box (monochrome-minimalism default)
         "borderWidth": 1,           // pill border width (px); 0 = no border
@@ -48,6 +49,7 @@ Item {
     // ---- Reactive convenience aliases ----
     readonly property bool   rainbow: d.rainbow === true
     readonly property real   bloom: typeof d.bloom === "number" ? d.bloom : 0
+    readonly property string bloomMode: d.bloomMode || "blur"
     readonly property real   uiOpacity: d.opacity === undefined ? 1 : Number(d.opacity)
     readonly property var    cornerRadius: d.cornerRadius   // raw number (Skin applies default if absent)
     readonly property var    borderWidth: d.borderWidth     // raw number (0 = no border)
