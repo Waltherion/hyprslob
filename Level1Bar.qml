@@ -76,8 +76,10 @@ Row {
                 text: btn.modelData.icon
                 font.family: "Symbols Nerd Font"
                 font.pixelSize: Math.round(l1.btnSize * 0.5)              // larger icon (~21px)
-                color: btn.selected ? Qt.rgba(btn.bg.r, btn.bg.g, btn.bg.b, 1)  // dark icon on light fill
-                                    : btn.fg
+                // inverse rainbow: the SELECTED button is a band fill with a dark icon; UNSELECTED buttons
+                // are a solid/mat fill with a BAND icon (colAt -> rolling band, or solid pal.text when rainbow off).
+                color: btn.selected ? Qt.rgba(btn.bg.r, btn.bg.g, btn.bg.b, 1)
+                                    : l1.colAt(btn.mapToItem(null, btn.width / 2, 0).x)
             }
             Rectangle {   // unread badge (notif button only)
                 visible: btn.modelData.key === "notif" && l1.notifUnread
