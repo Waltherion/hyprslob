@@ -90,7 +90,7 @@ Item {
                     anchors.left: parent.left; anchors.leftMargin: 12; anchors.verticalCenter: parent.verticalCenter
                     content: tp.prompt.length ? tp.prompt : "❯"
                     family: tp.fam; pixelSize: 15; fontWeight: 700
-                    rainbow: !!(tp.skin && tp.skin.rainbow)
+                    rainbow: !!(tp.skin && tp.skin.isRainbow("text"))
                     stops: tp.skin ? tp.skin.stops : []
                     phase: tp.skin ? tp.skin.phase : 0
                     period: tp.skin ? tp.skin.bandPeriod : 420
@@ -188,7 +188,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 content: modelData.label
                                 family: tp.fam; pixelSize: 13; fontWeight: index === tp.sel ? 600 : 400
-                                rainbow: !!(tp.skin && tp.skin.rainbow)
+                                rainbow: !!(tp.skin && tp.skin.isRainbow("text"))
                                 stops: tp.skin ? tp.skin.stops : []
                                 phase: tp.skin ? tp.skin.phase : 0
                                 period: tp.skin ? tp.skin.bandPeriod : 420

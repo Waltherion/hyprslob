@@ -179,9 +179,9 @@ Column {
                     Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
                     readonly property bool hot: modelData.v > 65
                     // rolling rainbow on normal load; solid warning colour when hot (or no rainbow)
-                    BandRect { anchors.fill: parent; skin: sp.skin; visible: sp.skin && sp.skin.rainbow && !fill.hot }
+                    BandRect { anchors.fill: parent; skin: sp.skin; visible: sp.skin && sp.skin.isRainbow("accent") && !fill.hot }
                     Rectangle { anchors.fill: parent; radius: 4; color: sp.usageColor(modelData.v)
-                        visible: !(sp.skin && sp.skin.rainbow) || fill.hot }
+                        visible: !(sp.skin && sp.skin.isRainbow("accent")) || fill.hot }
                 }
             }
             Text {
@@ -225,8 +225,8 @@ Column {
                 width: brTrack.width * Math.max(0, Math.min(1, sp.brightUi / 100))
                 height: parent.height; clip: true
                 Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                BandRect { anchors.fill: parent; skin: sp.skin; visible: sp.skin && sp.skin.rainbow }
-                Rectangle { anchors.fill: parent; radius: 4; visible: !(sp.skin && sp.skin.rainbow); color: sp.ac }
+                BandRect { anchors.fill: parent; skin: sp.skin; visible: sp.skin && sp.skin.isRainbow("accent") }
+                Rectangle { anchors.fill: parent; radius: 4; visible: !(sp.skin && sp.skin.isRainbow("accent")); color: sp.ac }
             }
             MouseArea {
                 anchors.fill: parent; anchors.margins: -7

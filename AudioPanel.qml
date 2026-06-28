@@ -251,8 +251,8 @@ Column {
             color: Qt.rgba(ap.fg.r, ap.fg.g, ap.fg.b, 0.12)
             Item {
                 width: track.width * Math.max(0, Math.min(1, ap.vol)); height: parent.height; clip: true
-                BandRect { anchors.fill: parent; skin: ap.skin; visible: !ap.muted && ap.skin && ap.skin.rainbow }
-                Rectangle { anchors.fill: parent; radius: 4; visible: ap.muted || !(ap.skin && ap.skin.rainbow)
+                BandRect { anchors.fill: parent; skin: ap.skin; visible: !ap.muted && ap.skin && ap.skin.isRainbow("accent") }
+                Rectangle { anchors.fill: parent; radius: 4; visible: ap.muted || !(ap.skin && ap.skin.isRainbow("accent"))
                     color: ap.muted ? ap.dim : ap.ac }
             }
             MouseArea {
@@ -286,8 +286,8 @@ Column {
             color: Qt.rgba(ap.fg.r, ap.fg.g, ap.fg.b, 0.12)
             Item {
                 width: micTrack.width * Math.max(0, Math.min(1, ap.micVol)); height: parent.height; clip: true
-                BandRect { anchors.fill: parent; skin: ap.skin; visible: !ap.micMuted && ap.skin && ap.skin.rainbow }
-                Rectangle { anchors.fill: parent; radius: 4; visible: ap.micMuted || !(ap.skin && ap.skin.rainbow)
+                BandRect { anchors.fill: parent; skin: ap.skin; visible: !ap.micMuted && ap.skin && ap.skin.isRainbow("accent") }
+                Rectangle { anchors.fill: parent; radius: 4; visible: ap.micMuted || !(ap.skin && ap.skin.isRainbow("accent"))
                     color: ap.micMuted ? ap.dim : ap.ac }
             }
             MouseArea {

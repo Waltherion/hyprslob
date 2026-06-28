@@ -91,7 +91,7 @@ Row {
                     anchors.left: parent.left; anchors.leftMargin: 12; anchors.verticalCenter: parent.verticalCenter
                     content: dp.prompt.length ? dp.prompt : "❯"
                     family: dp.fam; pixelSize: 15; fontWeight: 700
-                    rainbow: !!(dp.skin && dp.skin.rainbow)
+                    rainbow: !!(dp.skin && dp.skin.isRainbow("text"))
                     stops: dp.skin ? dp.skin.stops : []
                     phase: dp.skin ? dp.skin.phase : 0
                     period: dp.skin ? dp.skin.bandPeriod : 420
@@ -127,7 +127,7 @@ Row {
                 anchors.left: parent.left; anchors.leftMargin: 4; anchors.verticalCenter: parent.verticalCenter
                 content: dp.prompt
                 family: dp.fam; pixelSize: 13; fontWeight: 600
-                rainbow: !!(dp.skin && dp.skin.rainbow)
+                rainbow: !!(dp.skin && dp.skin.isRainbow("text"))
                 stops: dp.skin ? dp.skin.stops : []
                 phase: dp.skin ? dp.skin.phase : 0
                 period: dp.skin ? dp.skin.bandPeriod : 420
@@ -168,7 +168,7 @@ Row {
                             id: lbl
                             content: modelData.label
                             family: dp.fam; pixelSize: 13; fontWeight: 400
-                            rainbow: !!(dp.skin && dp.skin.rainbow)
+                            rainbow: !!(dp.skin && dp.skin.isRainbow("text"))
                             stops: dp.skin ? dp.skin.stops : []
                             phase: dp.skin ? dp.skin.phase : 0
                             period: dp.skin ? dp.skin.bandPeriod : 420

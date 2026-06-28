@@ -46,7 +46,7 @@ Item {
                 anchors.left: parent.left; anchors.leftMargin: 4; anchors.verticalCenter: parent.verticalCenter
                 content: "Wallpapers"
                 family: wp.fam; pixelSize: 14; fontWeight: 600
-                rainbow: !!(wp.skin && wp.skin.rainbow)
+                rainbow: !!(wp.skin && wp.skin.isRainbow("text"))
                 stops: wp.skin ? wp.skin.stops : []
                 phase: wp.skin ? wp.skin.phase : 0
                 period: wp.skin ? wp.skin.bandPeriod : 420

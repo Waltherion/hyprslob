@@ -21,13 +21,23 @@ QtObject {
     readonly property color defBorder: "#ffffff"
     readonly property color defHighlight: "#ffffff"
 
-    function _pick(slot, def) {
+    function _raw(slot) {                        // raw override value (a hex, or the string "rainbow"), or null
         var inl = cfg ? cfg.color : null;       // inline cfg.color{}  (highest)
         var ext = cfg ? cfg.extColor : null;    // external color file
         if (inl && inl[slot]) return inl[slot];
         if (ext && ext[slot]) return ext[slot];
-        return def;                             // built-in default
+        return null;
     }
+    function _pick(slot, def) {
+        var v = _raw(slot);
+        if (v && v !== "rainbow") return v;     // a real colour override
+        return def;                             // "rainbow" or unset -> built-in default (the SOLID fallback)
+    }
+    // Per-element rainbow: a colour slot set to "rainbow" rides the band; the global "rainbow": true is a
+    // shorthand for ALL slots (backwards compatible). Elements sample the band when isRainbow(theirSlot).
+    function isRainbow(slot) { return rainbow || _raw(slot) === "rainbow"; }
+    readonly property bool anyRainbow: rainbow || isRainbow("text") || isRainbow("accent")
+                                       || isRainbow("border") || isRainbow("highlight")
 
     readonly property color background: _pick("background", defBackground)
     readonly property color text:       _pick("text",       defText)

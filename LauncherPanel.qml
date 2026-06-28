@@ -199,7 +199,7 @@ Column {
                             id: nameLabel
                             content: modelData.name || ""
                             family: lp.fam; pixelSize: 14; fontWeight: 400
-                            rainbow: !!(lp.skin && lp.skin.rainbow)
+                            rainbow: !!(lp.skin && lp.skin.isRainbow("text"))
                             stops: lp.skin ? lp.skin.stops : []
                             phase: lp.skin ? lp.skin.phase : 0
                             period: lp.skin ? lp.skin.bandPeriod : 420

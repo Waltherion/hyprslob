@@ -15,18 +15,18 @@
   // "opacity": 1.0,            // whole-pill opacity, 0..1
   //                            // (to scale the whole bar, change "font" -> "size" below)
 
-  // ---- Colors ----  (omit any slot to keep its default)
+  // ---- Colors ----  (each slot is a hex like "#ff0000", OR "rainbow" to ride the band; omit to keep its default)
   // "color": {
   //   "background": "#000000",     // pill background (ARGB or RGB hex)
-  //   "text":       "#ffffff",     // clock / labels
-  //   "accent":     "#ffffff",     // active dot, badges, selected button
+  //   "text":       "#ffffff",     // clock / labels / hub icons / visualizer   (or "rainbow")
+  //   "accent":     "#ffffff",     // active ws dot, badges, panel band-fills    (or "rainbow")
   //   "border":     "#ffffff",     // pill border (needs borderWidth > 0)
   //   "highlight":  "#ffffff"      // hover / focus highlight
   // },
   // "colors": "",              // OR: path to an external color file (same shape as "color")
 
-  // ---- Rainbow ----  (animated gradient over text / visualizer / active dot / selected button)
-  // "rainbow": false,          // true = rolling rainbow text (needs "stops"); false = static (free)
+  // ---- Rainbow ----  (rolling band; needs "stops". Per-element: set a colour slot to "rainbow" above.)
+  // "rainbow": false,          // SHORTHAND: true = ALL colour slots ride the band; false = per-slot (or off)
   // "stops": ["#ff5555","#ffb86c","#50fa7b","#8be9fd","#bd93f9"],  // >=2 hex stops
   // "rainbowPeriod": 420,      // px per full rainbow across the bar: lower = tighter/more, higher = stretched
   // "rainbowSpeed": 1.0,       // roll speed: 1 = ~12s/cycle, 2 = faster, 0.5 = slower, 0 = frozen, negative = reverse

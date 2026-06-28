@@ -144,7 +144,7 @@ ShellRoot {
     property real rainbowPhase: 0
     Timer {
         interval: 60; repeat: true
-        running: pal.rainbow
+        running: pal.anyRainbow
         // ~12s/cycle at speed 1; cfg.rainbowSpeed scales it (0 = frozen, <0 = reverse). Normalized to [0,1).
         onTriggered: root.rainbowPhase = ((root.rainbowPhase + 0.005 * cfg.rainbowSpeed) % 1 + 1) % 1
     }
@@ -593,7 +593,7 @@ ShellRoot {
                             anchors.horizontalCenter: parent.horizontalCenter
                             y: win.boxH + win.expandGap          // relative to the box's top (boxTop)
                             skin: pal
-                            rainbow: pal.rainbow
+                            rainbow: pal.isRainbow("text")
                             stops: pal.stops
                             phase: root.rainbowPhase
                             period: win.rbPeriod
@@ -728,7 +728,7 @@ ShellRoot {
                         id: timeSlot
                         width: clockRow.fieldW; height: dayText.implicitHeight
                         readonly property bool wsHere: cfg.wsSide === "time"
-                        RainbowLabel { id: timeText; anchors.centerIn: parent; content: root.timeStr; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; features: win.feat; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.rainbow; solid: pal.text
+                        RainbowLabel { id: timeText; anchors.centerIn: parent; content: root.timeStr; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; features: win.feat; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.isRainbow("text"); solid: pal.text
                             opacity: timeSlot.wsHere ? (1 - win.wsShown) : 1 }
                         WorkspaceDots {
                             id: timeDots
@@ -738,11 +738,11 @@ ShellRoot {
                             screenName: win.screen.name
                             activeColor: pal.accent; dimColor: Qt.rgba(pal.text.r, pal.text.g, pal.text.b, 0.5)
                             dotSize: Math.max(8, Math.round(win.sz * 0.62))
-                            rainbow: pal.rainbow; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod
+                            rainbow: pal.isRainbow("accent"); stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod
                         }
                     }
                     // separator
-                    RainbowLabel { content: "  |  "; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.rainbow; solid: pal.separator }
+                    RainbowLabel { content: "  |  "; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.isRainbow("text"); solid: pal.separator }
                     // Middle: Day (morph slot - visualizer added behind showVisualizer in a later phase)
                     Item {
                         id: midSlot
@@ -755,7 +755,7 @@ ShellRoot {
                             width: dayText.implicitWidth; height: dayText.implicitHeight
                             opacity: (root.showVisualizer && root.audioActive) ? 0 : 1
                             Behavior on opacity { NumberAnimation { duration: win.anim; easing.type: Easing.InOutCubic } }
-                            RainbowLabel { id: dayText; content: root.dayStr; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; features: win.feat; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.rainbow; solid: pal.text }
+                            RainbowLabel { id: dayText; content: root.dayStr; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; features: win.feat; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.isRainbow("text"); solid: pal.text }
                         }
                         // Visualizer curve (unfolds symmetrically out of the middle when audio is playing)
                         Item {
@@ -769,7 +769,7 @@ ShellRoot {
                                 id: viz
                                 anchors.fill: parent
                                 antialiasing: true
-                                property var rainbow: pal.stops
+                                property var rainbow: pal.isRainbow("text") ? pal.stops : []
                                 property var lv: root.levels
                                 onLvChanged: requestPaint()
                                 onWidthChanged: requestPaint()
@@ -820,13 +820,13 @@ ShellRoot {
                         }
                     }
                     // separator
-                    RainbowLabel { content: "  |  "; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.rainbow; solid: pal.separator }
+                    RainbowLabel { content: "  |  "; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.isRainbow("text"); solid: pal.separator }
                     // Date (right field) - host for ws dots if wsSide=="date"
                     Item {
                         id: dateSlot
                         width: clockRow.fieldW; height: dayText.implicitHeight
                         readonly property bool wsHere: cfg.wsSide === "date"
-                        RainbowLabel { id: dateText; anchors.centerIn: parent; content: root.dateStr; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; features: win.feat; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.rainbow; solid: pal.text
+                        RainbowLabel { id: dateText; anchors.centerIn: parent; content: root.dateStr; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; features: win.feat; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.isRainbow("text"); solid: pal.text
                             opacity: dateSlot.wsHere ? (1 - win.wsShown) : 1 }
                         WorkspaceDots {
                             id: dateDots
@@ -836,7 +836,7 @@ ShellRoot {
                             screenName: win.screen.name
                             activeColor: pal.accent; dimColor: Qt.rgba(pal.text.r, pal.text.g, pal.text.b, 0.5)
                             dotSize: Math.max(8, Math.round(win.sz * 0.62))
-                            rainbow: pal.rainbow; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod
+                            rainbow: pal.isRainbow("accent"); stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod
                         }
                     }
                     // optional right icon (config.icon.right)
