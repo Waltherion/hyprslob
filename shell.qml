@@ -44,6 +44,10 @@ ShellRoot {
     // per screen; IPC sends a signal that ONLY the focused screen reacts to.
     property bool barVisible: true
     property bool caffeine: false   // keep-awake (Wayland idle inhibitor); toggled from the system panel
+    // Game mode: a near-zero-cost state. The bar (and launcher/hub) stays alive, but the costly bits are
+    // frozen/off: the rainbow phase animation, the bloom effect, and the cava visualizer. Toggled by
+    // gamemode.sh via IPC, so the launcher is still available while gaming (instead of killing the bar).
+    property bool gameMode: false
     signal hubIpc(string action, string key)
     signal dmenuRequest(string choicesPath, string resultPath, string prompt)
     signal wallpapersRequest(string choicesPath, string resultPath)
@@ -63,6 +67,7 @@ ShellRoot {
         function themes(choicesPath: string, resultPath: string): void { root.barVisible = true; root.themesRequest(choicesPath, resultPath) }
         function power(): void { root.barVisible = true; root.hubIpc("toggleKey", "power") }   // power menu (Super+Esc); q/w/e/r/t pick
         function caffeine(): void { root.caffeine = !root.caffeine }   // toggle keep-awake (optional keybind)
+        function gamemode(on: string): void { root.gameMode = (on === "on" || on === "1" || on === "true") }
     }
 
     // ---- MRU media player. Remember the dbusName of the last control-capable MPRIS player that
@@ -118,7 +123,7 @@ ShellRoot {
     Timer { id: holdTimer; interval: 900; onTriggered: root.audioActive = false }   // hold so the morph doesn't flicker
     Process {
         command: ["python3", Quickshell.env("HOME") + "/.config/quickshell/hyprslob/cava-stream.py"]
-        running: root.barVisible && root.showVisualizer
+        running: root.barVisible && root.showVisualizer && !root.gameMode
         stdout: SplitParser {
             splitMarker: "\n"
             onRead: data => {
@@ -144,7 +149,7 @@ ShellRoot {
     property real rainbowPhase: 0
     Timer {
         interval: 60; repeat: true
-        running: pal.anyRainbow
+        running: pal.anyRainbow && !root.gameMode
         // ~12s/cycle at speed 1; cfg.rainbowSpeed scales it (0 = frozen, <0 = reverse). Normalized to [0,1).
         onTriggered: root.rainbowPhase = ((root.rainbowPhase + 0.005 * cfg.rainbowSpeed) % 1 + 1) % 1
     }
@@ -673,14 +678,14 @@ ShellRoot {
                 }
                 Item {
                     id: bloomClip
-                    visible: pal.bloom > 0.0
+                    visible: pal.bloom > 0.0 && !root.gameMode
                     x: clockBox.x; y: win.boxTop
                     width: clockBox.width; height: win.boxH
-                    layer.enabled: pal.bloom > 0.0
+                    layer.enabled: pal.bloom > 0.0 && !root.gameMode
                     layer.effect: OpacityMask { maskSource: bloomMask }
                     Loader {
                         id: bloomLoader
-                        active: pal.bloom > 0.0
+                        active: pal.bloom > 0.0 && !root.gameMode
                         x: clockRow.x - bloomClip.x
                         y: clockRow.y - bloomClip.y
                         width: clockRow.width; height: clockRow.height
