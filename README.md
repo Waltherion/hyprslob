@@ -169,6 +169,23 @@ Also: **zero-cost static mode** (turn off rainbow, bloom and the visualizer and 
 animation repaint loops at all), per-monitor, auto-hides in fullscreen, and it reserves space like
 a normal bar.
 
+### Dynamic colors from an external tool
+
+Set `"colors"` to a file path and the bar's colors can be driven **live from outside** — perfect
+for pywal/matugen or a wallpaper-color watcher:
+
+```jsonc
+"color":  { "text": "#7fe3c3", "accent": "#7fe3c3" },        // static fallback
+"colors": "/home/you/.cache/wal/hyprslob-colors.json"        // live override (wins, per slot; absolute path)
+```
+
+The file holds any subset of the color slots (`{ "text": "#...", "accent": "#...", ... }`) and may
+also carry `"stops": ["#...", "#..."]` to recolor the **rolling rainbow band** itself — so even in
+rainbow mode the bar can follow your wallpaper's palette. Whenever your tool rewrites it, the bar
+recolors immediately — no restart, no IPC. Keys the file doesn't define fall back to the inline
+config, and a malformed write keeps the last valid colors, so the bar never flashes back to theme
+colors mid-update.
+
 And the same bar living on a few different desktops:
 
 <table align="center">

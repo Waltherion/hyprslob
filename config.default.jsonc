@@ -23,7 +23,11 @@
   //   "border":     "#ffffff",     // pill border (needs borderWidth > 0)
   //   "highlight":  "#ffffff"      // hover / focus highlight
   // },
-  // "colors": "",              // OR: path to an external color file (same shape as "color")
+  // "colors": "",              // path to an external color file (same shape as "color"; any subset of
+  //                            // slots, plus optionally "stops": [...] to recolor the rainbow band).
+  //                            // OVERRIDES the inline colors/stops per key, and LIVE-RELOADS whenever
+  //                            // the file changes: point pywal/matugen/your own wallpaper-color script
+  //                            // at it and the bar recolors on the fly (inline values = static fallback)
 
   // ---- Rainbow ----  (rolling band; needs "stops". Per-element: set a colour slot to "rainbow" above.)
   // "rainbow": false,          // SHORTHAND: true = ALL colour slots ride the band; false = per-slot (or off)

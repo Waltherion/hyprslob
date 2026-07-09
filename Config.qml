@@ -122,12 +122,16 @@ Item {
         onLoadFailed: (err) => { cfg.localObj = ({}); cfg._recompute(); }
     }
 
-    // External color file (optional theme bridge). Loaded only when cfg.colors is set.
+    // External color file: the LIVE override channel (wins over the inline "color"
+    // block, per slot -- see Skin.qml). An external tool (pywal/matugen/wallpaper-
+    // colour watcher) rewrites it and the bar recolours on the fly. JSONC-tolerant;
+    // a parse error keeps the last valid colours (so partial/in-place writes never
+    // flash back to theme colours). A MISSING file clears the overrides.
     FileView {
         id: extView
         path: cfg.colorsPath
         watchChanges: true
-        onLoaded: { try { cfg.extColor = JSON.parse(extView.text()) || ({}); } catch (e) { cfg.extColor = ({}); } }
+        onLoaded: { var o = cfg._parseJsonc(extView.text()); if (o !== null) cfg.extColor = o; }
         onFileChanged: reload()
         onLoadFailed: (err) => cfg.extColor = ({})
     }

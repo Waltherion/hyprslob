@@ -9,7 +9,9 @@ Canvas {
     antialiasing: true
 
     readonly property real ph: skin ? skin.phase : 0   // repaint as the band rolls
+    readonly property var stopsDep: skin ? skin.stops : null // live stops swap (external color file)
     onPhChanged: requestPaint()
+    onStopsDepChanged: requestPaint()
     onWidthChanged: requestPaint()
     onHeightChanged: requestPaint()
     onSkinChanged: requestPaint()

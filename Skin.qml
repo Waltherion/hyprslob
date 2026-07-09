@@ -4,8 +4,11 @@
 //
 // Color slot priority (low->high):
 //   1. built-in default (below)
-//   2. external color file (cfg.colors path)
-//   3. inline cfg.color{}  (wins)
+//   2. inline cfg.color{}  (the theme's static palette)
+//   3. external color file (cfg.colors path) -- wins, per slot. The live override
+//      channel: an external tool (pywal/matugen/wallpaper-colour watcher) rewrites
+//      the file and the bar recolours immediately; inline colours are the fallback
+//      for slots the file doesn't define (or when the file is missing).
 
 import QtQuick
 
@@ -22,10 +25,10 @@ QtObject {
     readonly property color defHighlight: "#ffffff"
 
     function _raw(slot) {                        // raw override value (a hex, or the string "rainbow"), or null
-        var inl = cfg ? cfg.color : null;       // inline cfg.color{}  (highest)
-        var ext = cfg ? cfg.extColor : null;    // external color file
-        if (inl && inl[slot]) return inl[slot];
+        var ext = cfg ? cfg.extColor : null;    // external color file (highest -- live override)
+        var inl = cfg ? cfg.color : null;       // inline cfg.color{}  (the theme's fallback)
         if (ext && ext[slot]) return ext[slot];
+        if (inl && inl[slot]) return inl[slot];
         return null;
     }
     function _pick(slot, def) {
@@ -48,7 +51,21 @@ QtObject {
 
     // Rainbow gradient stops - drives rainbow text, visualizer curve, active ws dot,
     // and the selected hub button. Needs >=2 hex stops; otherwise no rainbow.
-    readonly property var stops: (cfg && cfg.stops && cfg.stops.length >= 2) ? cfg.stops : []
+    // The external color file (cfg.colors) may also carry "stops": [...] -- it wins over
+    // the config's stops, so a wallpaper-colour tool can recolour the rolling band live.
+    // Entries are validated (#rrggbb) so a bad write can't feed NaN into the band math.
+    function _validStops(a) {
+        if (!a || !Array.isArray(a)) return null;
+        var out = a.filter(function (s) {
+            return typeof s === "string" && /^#[0-9a-fA-F]{6}$/.test(s);
+        });
+        return out.length >= 2 ? out : null;
+    }
+    readonly property var stops: {
+        var ext = (cfg && cfg.extColor) ? _validStops(cfg.extColor.stops) : null;
+        if (ext) return ext;
+        return (cfg && cfg.stops && cfg.stops.length >= 2) ? cfg.stops : [];
+    }
 
     // ---- Rolling rainbow band ----
     // The whole UI reads as "windows" into ONE rolling rainbow band: every accent surface samples
