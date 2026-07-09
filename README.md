@@ -64,7 +64,8 @@ into that panel - one cohesive surface, never loose floating widgets.
   (left-click = activate, middle-click = hard-close the app, right-click = its menu). A small
   caffeine (keep-awake) toggle sits by the OS name - it holds a Wayland idle inhibitor that survives
   fullscreen; also bindable via the `caffeine` IPC.
-- **Audio** - media controls (MPRIS), volume slider, mute, output switcher (PipeWire).
+- **Audio** - media controls (MPRIS) with **source chips** when several players are on the bus
+  (click to switch which one the media centre controls), volume slider, mute, output switcher (PipeWire).
 - **Network** - three boxes: a status box showing what you're connected to (Wired or the Wi-Fi
   SSID), a Wi-Fi box with its own radio toggle + settings, and Bluetooth (toggle + paired devices).
 - **Notifications** - history, do-not-disturb, clear-all (HyprSlob is the notification daemon).

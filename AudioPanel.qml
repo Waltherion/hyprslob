@@ -24,8 +24,77 @@ Column {
     // which remembers the last source that played, so pausing everything doesn't jump to another
     // player. The playerctld proxy just mirrors another player, so we drop it.
     property string activeName: ""   // MRU last-active dbusName (from shell.qml; sticky on pause)
+    // User picked a source chip: shell.qml sets its MRU to this name (sticky until
+    // another source starts playing by itself, exactly like the automatic tracking).
+    signal sourceSelected(string name)
     readonly property var _players: (Mpris.players && Mpris.players.values)
         ? Mpris.players.values.filter(p => p && (p.dbusName || "").indexOf("playerctld") < 0) : []
+    // Short human label for a source chip: the app's MPRIS identity, else the
+    // dbus name with the org.mpris prefix and any .instanceNNN suffix stripped.
+    function srcLabel(p) {
+        if (!p) return "?";
+        if (p.identity && p.identity.length) return p.identity;
+        var n = (p.dbusName || "").replace("org.mpris.MediaPlayer2.", "");
+        return n.replace(/\.instance[-_0-9]+$/, "") || "?";
+    }
+
+    // Chip sources: merge an engine player with its metadata sibling into ONE chip.
+    // E.g. YouTube Music CLI drives a headless mpv: mpv owns the WORKING transport
+    // (play/pause/seek/real time) while the TUI publishes rich metadata but broken
+    // controls. Pairing mirrors metaPlayer's rule (a sibling with an artist whose
+    // title is contained in the control's title); the merged chip shows the rich
+    // identity but SELECTS the control player -- mpv's transport, the TUI's name.
+    // Browser + plasma-browser-integration pairs collapse the same way.
+    readonly property var chipSources: {
+        const list = ap._players;
+        // Engines = headless playback backends (mpv). Drivers = players that publish
+        // state but no seek (canSeek false) -- the signature of a TUI/app steering an
+        // engine (e.g. YouTube Music CLI). Pairing is engine<->driver ONLY, so several
+        // instances of the same app can never absorb each other, and browsers (canSeek
+        // true) are never involved. Titles refine the match when available, but the
+        // bus-order fallback makes merging deterministic even before metadata arrives.
+        const isEngine = p => ((p.identity || "").toLowerCase() === "mpv")
+                              || ((p.dbusName || "").indexOf("org.mpris.MediaPlayer2.mpv") === 0);
+        const engines = list.filter(isEngine);
+        const drivers = list.filter(p => !isEngine(p) && p.canSeek === false);
+        const norm = s => (s || "").trim().toLowerCase();
+        const paired = ({});
+        const used = ({});
+        // pass 1: title relation (either title contains the other)
+        for (var i = 0; i < engines.length; i++) {
+            const e = engines[i];
+            const te = norm(e.trackTitle);
+            if (!te.length) continue;
+            const m = drivers.find(a => !used[a.dbusName || ""] && norm(a.trackTitle).length
+                                   && (te.indexOf(norm(a.trackTitle)) >= 0
+                                       || norm(a.trackTitle).indexOf(te) >= 0));
+            if (m) { paired[e.dbusName || ""] = m; used[m.dbusName || ""] = true; }
+        }
+        // pass 2: leftover engines and drivers pair in bus order
+        const freeE = engines.filter(e => !paired[e.dbusName || ""]);
+        const freeD = drivers.filter(a => !used[a.dbusName || ""]);
+        for (var j = 0; j < freeE.length && j < freeD.length; j++) {
+            paired[freeE[j].dbusName || ""] = freeD[j];
+            used[freeD[j].dbusName || ""] = true;
+        }
+        const out = [];
+        for (var k = 0; k < list.length; k++) {
+            const p = list[k];
+            if (used[p.dbusName || ""]) continue; // absorbed as an engine's driver
+            const m = isEngine(p) ? (paired[p.dbusName || ""] || null) : null;
+            out.push({ control: p, meta: m, label: ap.srcLabel(m || p) });
+        }
+        // Duplicate labels (several instances of the same app): number them so the
+        // chips stay distinguishable ("YouTube Music CLI", "YouTube Music CLI 2", ...).
+        const seen = ({});
+        for (var n = 0; n < out.length; n++) {
+            const l = out[n].label;
+            seen[l] = (seen[l] || 0) + 1;
+            if (seen[l] > 1)
+                out[n].label = l + " " + seen[l];
+        }
+        return out;
+    }
     // control player = the sticky MRU one; else a playing control-capable player, else any control, else any.
     readonly property var player: {
         if (!ap._players.length) return null;
@@ -109,6 +178,57 @@ Column {
             id: mediaCol
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
             spacing: 8
+
+            // ---- Source chips: choose which player the media centre controls. Shown
+            //      only with several MPRIS sources on the bus (zero clutter otherwise);
+            //      the pick is sticky via shell.qml's MRU until another source starts. ----
+            Flow {
+                width: parent.width
+                spacing: 4
+                visible: ap.chipSources.length > 1
+                Repeater {
+                    model: ap.chipSources
+                    delegate: Rectangle {
+                        id: chip
+                        required property var modelData
+                        // active when the panel controls EITHER half of a merged pair
+                        readonly property bool active: ap.player === modelData.control
+                                                       || (modelData.meta && ap.player === modelData.meta)
+                        radius: 5
+                        implicitWidth: chipRow.implicitWidth + 12
+                        implicitHeight: 18
+                        color: chip.active ? Qt.rgba(ap.ac.r, ap.ac.g, ap.ac.b, 0.16)
+                                           : Qt.rgba(ap.fg.r, ap.fg.g, ap.fg.b, 0.06)
+                        border.width: 1
+                        border.color: chip.active ? ap.acAt(mapToItem(null, width / 2, 0).x)
+                                                  : Qt.rgba(ap.fg.r, ap.fg.g, ap.fg.b, 0.16)
+                        Row {
+                            id: chipRow
+                            anchors.centerIn: parent
+                            spacing: 4
+                            Rectangle { // playing indicator
+                                width: 5; height: 5; radius: 2.5
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: chip.modelData.control.isPlaying
+                                         || (chip.modelData.meta && chip.modelData.meta.isPlaying)
+                                color: chip.active ? ap.acAt(chip.mapToItem(null, chip.width / 2, 0).x) : ap.dim
+                            }
+                            Text {
+                                text: chip.modelData.label
+                                color: chip.active ? ap.fg : ap.dim
+                                font.family: ap.fam
+                                font.pixelSize: 9
+                                elide: Text.ElideRight
+                            }
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            // always select the CONTROL half (the working transport)
+                            onClicked: ap.sourceSelected(chip.modelData.control.dbusName || "")
+                        }
+                    }
+                }
+            }
 
             // cover + title/artist + controls
             RowLayout {

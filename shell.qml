@@ -645,7 +645,10 @@ ShellRoot {
                             onCaffeineToggled: root.caffeine = !root.caffeine
                         }
                     }
-                    Component { id: audioPanelComp; AudioPanel { skin: pal; activeName: root.mprisActiveName } }
+                    // Source chip clicked: make that player the sticky MRU choice (a source
+                    // that later starts playing by itself still takes over, as always).
+                    Component { id: audioPanelComp; AudioPanel { skin: pal; activeName: root.mprisActiveName
+                        onSourceSelected: name => root.mprisActiveName = name } }
                     Component { id: netPanelComp; NetPanel { skin: pal } }
                     Component { id: notifPanelComp; NotifPanel { skin: pal; srv: server; dnd: root.dnd
                         onDndToggled: root.dnd = !root.dnd; onClearAllRequested: root.clearAllNotifs() } }
