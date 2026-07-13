@@ -4,6 +4,7 @@
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.SystemTray
 
 Column {
@@ -33,8 +34,17 @@ Column {
     // (writing the streamed properties directly would break their bindings).
     property int brightUi: 0
     property string profileUi: ""
+    property string profilePending: ""   // user just picked this; ignore stale/lagging stream
+                                          // values until the daemon (and the ~20s-cached stream)
+                                          // report it back, so the switcher never reverts.
     onBrightChanged: if (bright >= 0) brightUi = bright;
-    onProfileChanged: profileUi = profile;
+    onProfileChanged: {
+        if (profilePending !== "") {
+            if (profile === profilePending) profilePending = "";   // caught up -> resume syncing
+            else return;                                           // still stale -> keep the pick
+        }
+        profileUi = profile;
+    }
     function batTime(m) {
         if (m < 0) return "";
         const h = Math.floor(m / 60), mm = m % 60;
@@ -42,7 +52,16 @@ Column {
     }
     property string kernel: ""
     property string osName: "Linux"
+    // Active-window class: only shown here, so we poll hyprctl ONLY while this panel is
+    // instantiated (the Loader drops it when the hub closes or switches source) -- no
+    // process-fork every 1.5s while the bar just sits idle on the clock.
     property string activeApp: ""
+    Process { id: winProc; command: ["hyprctl", "activewindow", "-j"]
+        stdout: StdioCollector { id: winCol; onStreamFinished: {
+            try { const o = JSON.parse(winCol.text); sp.activeApp = (o && o.class) ? o.class : ""; }
+            catch (e) { sp.activeApp = ""; } } } }
+    Timer { interval: 1500; running: true; repeat: true; triggeredOnStart: true
+        onTriggered: winProc.running = true }
     property bool caffeine: false       // keep-awake state (owned by shell.qml)
     signal caffeineToggled()
 
@@ -276,7 +295,8 @@ Column {
                 MouseArea {
                     id: pma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        sp.profileUi = modelData.id;   // instant feedback; stream confirms within 2s
+                        sp.profileUi = modelData.id;      // instant feedback
+                        sp.profilePending = modelData.id; // hold it until the stream reports it back
                         Quickshell.execDetached(["powerprofilesctl", "set", modelData.id]);
                     }
                 }

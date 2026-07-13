@@ -66,6 +66,19 @@ QtObject {
         if (ext) return ext;
         return (cfg && cfg.stops && cfg.stops.length >= 2) ? cfg.stops : [];
     }
+    // Pre-parsed stops as {r,g,b} floats (0..1). The band is sampled ~16x/s at every accent
+    // surface, so we parse the hex ONCE here (only when stops changes) and keep _band's per-tick
+    // math to plain float lerps -- no slice()/parseInt() in the hot loop.
+    readonly property var stopsRgb: {
+        var s = stops, out = [];
+        for (var i = 0; i < s.length; i++) {
+            var h = s[i];
+            out.push({ r: parseInt(h.slice(1, 3), 16) / 255,
+                       g: parseInt(h.slice(3, 5), 16) / 255,
+                       b: parseInt(h.slice(5, 7), 16) / 255 });
+        }
+        return out;
+    }
 
     // ---- Rolling rainbow band ----
     // The whole UI reads as "windows" into ONE rolling rainbow band: every accent surface samples
@@ -74,28 +87,25 @@ QtObject {
     property real phase: 0
     readonly property real bandPeriod: cfg ? cfg.rainbowPeriod : 420   // px per full rainbow (config: rainbowPeriod)
 
-    function _band(px) {   // -> [r,g,b] 0..255 sampled from the band at global x, or null (no rainbow)
-        const s = stops;
+    function _band(px) {   // -> [r,g,b] floats 0..1 sampled from the band at global x, or null (no rainbow)
+        const s = stopsRgb;
         if (!rainbow || !s || s.length < 2) return null;
         const t = (((px / bandPeriod + phase) % 1) + 1) % 1;
         const n = s.length, f = t * n;
         const i = Math.floor(f) % n, j = (i + 1) % n, fr = f - Math.floor(f);
-        const ch = (h, k) => parseInt(h.slice(1 + k * 2, 3 + k * 2), 16);
         const a = s[i], b = s[j];
-        return [Math.round(ch(a, 0) + (ch(b, 0) - ch(a, 0)) * fr),
-                Math.round(ch(a, 1) + (ch(b, 1) - ch(a, 1)) * fr),
-                Math.round(ch(a, 2) + (ch(b, 2) - ch(a, 2)) * fr)];
+        return [a.r + (b.r - a.r) * fr, a.g + (b.g - a.g) * fr, a.b + (b.b - a.b) * fr];
     }
     function bandAt(px) {   // color at global x; solid accent when rainbow is off
         const c = _band(px);
-        return c ? Qt.rgba(c[0] / 255, c[1] / 255, c[2] / 255, 1) : accent;
+        return c ? Qt.rgba(c[0], c[1], c[2], 1) : accent;
     }
     // "#rrggbb" forms for Canvas (createLinearGradient.addColorStop needs strings, not color objects)
     readonly property string accentHex: { const s = accent.toString(); return s.length === 9 ? "#" + s.slice(3) : s; }
     function bandHex(px) {
         const c = _band(px);
         if (!c) return accentHex;
-        const h = v => ("0" + Math.max(0, Math.min(255, v)).toString(16)).slice(-2);
+        const h = v => ("0" + Math.max(0, Math.min(255, Math.round(v * 255))).toString(16)).slice(-2);
         return "#" + h(c[0]) + h(c[1]) + h(c[2]);
     }
 

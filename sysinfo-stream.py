@@ -152,13 +152,22 @@ def brightness():
     return -1
 
 
-def power_profile():
+def power_profile(_c=[None, 0]):
     # Active power-profiles-daemon profile (power-saver|balanced|performance), or "" if ppd is
     # absent. Shown whenever ppd is running (desktops included).
+    # Cached ~20s ([value, ticks-left]): the profile changes rarely and each read forks
+    # powerprofilesctl, wasteful at the 2s stream cadence. The panel's switcher shows the picked
+    # value optimistically and holds it against a lagging stream (profilePending guard), so a
+    # stale read here can never revert the UI after a switch.
+    _c[1] -= 1
+    if _c[0] is not None and _c[1] > 0:
+        return _c[0]
     try:
-        return subprocess.check_output(["powerprofilesctl", "get"], text=True, timeout=2).strip()
+        _c[0] = subprocess.check_output(["powerprofilesctl", "get"], text=True, timeout=2).strip()
     except Exception:
-        return ""
+        _c[0] = ""
+    _c[1] = 10   # 10 * 2s ≈ 20s
+    return _c[0]
 
 
 def disk_pct(path="/"):

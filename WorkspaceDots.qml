@@ -17,18 +17,28 @@ Row {
     property real period: 420           // px per full rainbow
     spacing: Math.round(dotSize * 0.9)
 
+    // stops parsed to {r,g,b} floats once (only when stops changes); colAt stays plain lerps.
+    readonly property var _rgb: {
+        var s = dots.stops, out = [];
+        for (var i = 0; i < (s ? s.length : 0); i++) {
+            var h = s[i];
+            if (typeof h !== "string" || h.length < 7) continue;
+            out.push({ r: parseInt(h.slice(1, 3), 16) / 255,
+                       g: parseInt(h.slice(3, 5), 16) / 255,
+                       b: parseInt(h.slice(5, 7), 16) / 255 });
+        }
+        return out;
+    }
+
     // active-dot color: window into the scrolling band at global x (like RainbowLabel), otherwise solid
     function colAt(px) {
-        const s = dots.stops;
+        const s = dots._rgb;
         if (!dots.rainbow || !s || s.length < 2) return dots.activeColor;
         let t = (((px / dots.period + dots.phase) % 1) + 1) % 1;
         const n = s.length, f = t * n;
         const i = Math.floor(f) % n, j = (i + 1) % n, fr = f - Math.floor(f);
-        const ch = (h, k) => parseInt(h.slice(1 + k * 2, 3 + k * 2), 16);
         const a = s[i], b = s[j];
-        return Qt.rgba((ch(a, 0) + (ch(b, 0) - ch(a, 0)) * fr) / 255,
-                       (ch(a, 1) + (ch(b, 1) - ch(a, 1)) * fr) / 255,
-                       (ch(a, 2) + (ch(b, 2) - ch(a, 2)) * fr) / 255, 1);
+        return Qt.rgba(a.r + (b.r - a.r) * fr, a.g + (b.g - a.g) * fr, a.b + (b.b - a.b) * fr, 1);
     }
 
     Repeater {

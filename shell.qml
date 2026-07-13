@@ -197,12 +197,8 @@ ShellRoot {
     }
     onSysBatChanged: root._checkLowBattery()
     onSysBatChargingChanged: root._checkLowBattery()
-    property string activeApp: ""
-    Process { id: winProc; command: ["hyprctl", "activewindow", "-j"]
-        stdout: StdioCollector { id: winCol; onStreamFinished: {
-            try { const o = JSON.parse(winCol.text); root.activeApp = (o && o.class) ? o.class : ""; }
-            catch (e) { root.activeApp = ""; } } } }
-    Timer { interval: 1500; running: root.barVisible; repeat: true; triggeredOnStart: true; onTriggered: winProc.running = true }
+    // activeApp (hyprctl activewindow) is polled INSIDE SystemPanel now -- it is the only
+    // consumer, and the panel exists only while open, so idle no longer forks hyprctl.
     property string kernel: ""
     property string osName: "Linux"
     Process { command: ["uname", "-r"]; running: true
@@ -640,7 +636,7 @@ ShellRoot {
                             bat: root.sysBat; batCharging: root.sysBatCharging
                             batMin: root.sysBatMin; batHealth: root.sysBatHealth
                             bright: root.sysBright; profile: root.sysProfile
-                            kernel: root.kernel; osName: root.osName; activeApp: root.activeApp
+                            kernel: root.kernel; osName: root.osName
                             caffeine: root.caffeine
                             onCaffeineToggled: root.caffeine = !root.caffeine
                         }

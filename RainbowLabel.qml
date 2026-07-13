@@ -21,17 +21,28 @@ Row {
     property real phase: 0           // animated 0..1
     property real period: 800        // px per full rainbow
 
+    // stops parsed to {r,g,b} floats ONCE (only when stops changes) so colAt -- called per
+    // character every phase tick (~16x/s) -- stays plain float lerps, no slice()/parseInt().
+    readonly property var _rgb: {
+        var s = rl.stops, out = [];
+        for (var i = 0; i < (s ? s.length : 0); i++) {
+            var h = s[i];
+            if (typeof h !== "string" || h.length < 7) continue;
+            out.push({ r: parseInt(h.slice(1, 3), 16) / 255,
+                       g: parseInt(h.slice(3, 5), 16) / 255,
+                       b: parseInt(h.slice(5, 7), 16) / 255 });
+        }
+        return out;
+    }
+
     function colAt(px) {
-        const s = rl.stops;
+        const s = rl._rgb;
         if (!s || s.length < 2) return rl.solid;
         let t = (((px / rl.period + rl.phase) % 1) + 1) % 1;
         const n = s.length, f = t * n;
         const i = Math.floor(f) % n, j = (i + 1) % n, fr = f - Math.floor(f);
-        const ch = (h, k) => parseInt(h.slice(1 + k * 2, 3 + k * 2), 16);
         const a = s[i], b = s[j];
-        return Qt.rgba((ch(a, 0) + (ch(b, 0) - ch(a, 0)) * fr) / 255,
-                       (ch(a, 1) + (ch(b, 1) - ch(a, 1)) * fr) / 255,
-                       (ch(a, 2) + (ch(b, 2) - ch(a, 2)) * fr) / 255, 1);
+        return Qt.rgba(a.r + (b.r - a.r) * fr, a.g + (b.g - a.g) * fr, a.b + (b.b - a.b) * fr, 1);
     }
 
     // code-point iteration (Array.from) so nerd-font icons (including outside BMP) aren't split
