@@ -49,7 +49,14 @@ Column {
     }
 
     // ---- data (parsed from the watched cache file; null until first load) ----
-    property var wx: null
+    // Incubation-race guard (see notif popups in shell.qml): applying data changes the models of the
+    // day Repeater AND every RainbowLabel's per-character Repeater. If that happens while this panel
+    // is still being incubated (a cache file present at open fires onLoaded mid-build), Qt crashes in
+    // QQuickRepeater::regenerate. So parse into _wxRaw immediately but only EXPOSE it as `wx` once the
+    // panel has finished building (ready), keeping every model empty during incubation.
+    property var _wxRaw: null
+    property bool ready: false
+    readonly property var wx: ready ? _wxRaw : null
     readonly property var cur: wx && wx.current ? wx.current : null
     readonly property var days: wx && wx.days ? wx.days : []
     readonly property string windU: wx && wx.units ? wx.units.wind : "m/s"
@@ -106,7 +113,7 @@ Column {
     function refresh() { fetchProc.command = wp._args(); fetchProc.running = true; }
     function refreshIfStale() {
         var maxAge = (appcfg ? appcfg.weatherRefreshMinutes : 30) * 60;
-        var age = wp.wx ? (Date.now() / 1000 - (wp.wx.fetched || 0)) : 1e9;
+        var age = wp._wxRaw ? (Date.now() / 1000 - (wp._wxRaw.fetched || 0)) : 1e9;
         if (age >= maxAge) wp.refresh();
     }
 
@@ -117,7 +124,7 @@ Column {
         id: cacheView
         path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/hyprslob/weather.json"
         watchChanges: true
-        onLoaded: { try { var o = JSON.parse(cacheView.text()); if (o) wp.wx = o; } catch (e) {} }
+        onLoaded: { try { var o = JSON.parse(cacheView.text()); if (o) wp._wxRaw = o; } catch (e) {} }
         onFileChanged: reload()
     }
 
@@ -126,7 +133,9 @@ Column {
         running: true; repeat: true
         onTriggered: wp.refresh()
     }
-    Component.onCompleted: wp.refreshIfStale()
+    // expose data only AFTER the panel has finished incubating (avoids the Repeater-regenerate crash)
+    Timer { id: readyTimer; interval: 250; onTriggered: wp.ready = true }
+    Component.onCompleted: { readyTimer.start(); wp.refreshIfStale(); }
 
     // ================= header =================
     Item {
