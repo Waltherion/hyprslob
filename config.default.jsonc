@@ -70,7 +70,8 @@
   // "dmenuMaxResults": 12,     // dmenu rows shown before it scrolls
   // "dmenuPreviewWidth": 820,  // width when items carry a preview (list + preview pane)
   // "menuWidth": 420,          // the menu-button action-palette width
-  // "actions": [               // menu-button entries - your own commands (run via sh -c)
+  // "actions": [               // menu-button entries: run a command ("cmd") OR open a panel ("panel")
+  //   { "label": "Weather",      "panel": "weather" },                                  // built-in weather panel (see weather.jsonc)
   //   { "label": "Switch theme", "cmd": "$HOME/.config/hypr/scripts/theme-pick.sh" },
   //   { "label": "Screenshot",   "cmd": "$HOME/.config/hypr/scripts/screenshot.sh" }
   // ]

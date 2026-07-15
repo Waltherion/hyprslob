@@ -75,6 +75,33 @@ Item {
     readonly property int    menuWidth: (typeof d.menuWidth === "number" && d.menuWidth > 0) ? d.menuWidth : 420
     readonly property var    actions: Array.isArray(d.actions) ? d.actions : []
 
+    // ---- Weather module (separate ~/.config/hyprslob/weather.jsonc, live-watched) ----
+    // Kept out of the appearance config on purpose: location/units/API are behaviour+data, not
+    // theme. A neutral default (Copenhagen) means the panel works out of the box; a per-user
+    // weather.jsonc overrides it. See weather-fetch.py / WeatherPanel.qml.
+    readonly property var weatherDefaults: ({
+        "latitude": null,           // set both lat+lon to pin an exact spot (wins over "location")
+        "longitude": null,
+        "location": "Copenhagen",   // else this name is geocoded ("country" disambiguates duplicates)
+        "country": "DK",
+        "units": "metric",          // "metric" (C, mm) | "imperial" (F, inch)
+        "windUnit": "ms",           // "ms" | "kmh" | "mph" | "kn"
+        "model": "best_match",      // best_match auto-picks DMI/MetNo near DK; or pin a model
+        "refreshMinutes": 30,       // how often to refetch while the bar is visible
+        "hourFormat": 24            // 24 | 12 - sunrise/sunset clock
+    })
+    property var weatherObj: ({})   // parsed weather.jsonc (keeps last-good on parse error)
+    readonly property var weather: cfg._merge(cfg.weatherDefaults, cfg.weatherObj)
+    readonly property var    weatherLat: (typeof weather.latitude === "number") ? weather.latitude : null
+    readonly property var    weatherLon: (typeof weather.longitude === "number") ? weather.longitude : null
+    readonly property string weatherLocation: weather.location || ""
+    readonly property string weatherCountry: weather.country || ""
+    readonly property string weatherUnits: (weather.units === "imperial") ? "imperial" : "metric"
+    readonly property string weatherWindUnit: (["ms", "kmh", "mph", "kn"].indexOf(weather.windUnit) >= 0) ? weather.windUnit : "ms"
+    readonly property string weatherModel: weather.model || "best_match"
+    readonly property int    weatherRefreshMinutes: (typeof weather.refreshMinutes === "number" && weather.refreshMinutes > 0) ? weather.refreshMinutes : 30
+    readonly property int    weatherHourFormat: (weather.hourFormat === 12) ? 12 : 24
+
     function _stripJsonc(s) {
         // remove /* */ blocks, then // line comments (not `://`/after quote),
         // finally trailing commas (,} and ,]) -> proper JSONC; safe to comment lines out
@@ -134,5 +161,16 @@ Item {
         onLoaded: { var o = cfg._parseJsonc(extView.text()); if (o !== null) cfg.extColor = o; }
         onFileChanged: reload()
         onLoadFailed: (err) => cfg.extColor = ({})
+    }
+
+    // Weather module config - separate fixed-path file, live-watched. Absent is fine
+    // (neutral defaults apply); a parse error keeps the last valid settings.
+    FileView {
+        id: weatherView
+        path: Quickshell.env("HOME") + "/.config/hyprslob/weather.jsonc"
+        watchChanges: true
+        onLoaded: { var o = cfg._parseJsonc(weatherView.text()); if (o !== null) cfg.weatherObj = o; }
+        onFileChanged: reload()
+        onLoadFailed: (err) => cfg.weatherObj = ({})
     }
 }

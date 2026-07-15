@@ -305,7 +305,7 @@ ShellRoot {
             property int expandLevel: 0
             property string hubActive: ""
             // dmenu/menu/launcher are "modal" input modes - they don't auto-collapse on hover-leave.
-            readonly property bool modalMode: hubActive === "dmenu" || hubActive === "menu" || hubActive === "launcher" || hubActive === "wallpapers" || hubActive === "themes"
+            readonly property bool modalMode: hubActive === "dmenu" || hubActive === "menu" || hubActive === "launcher" || hubActive === "wallpapers" || hubActive === "themes" || hubActive === "weather"
             onExpandLevelChanged: { if (win.expandLevel === 0) { win.hubActive = ""; trayMenu.close(); } }
             onHubActiveChanged: { if (win.hubActive === "notif") root.unread = 0; trayMenu.close(); win.holdOpen = win.modalMode; if (win.hubActive === "power") Qt.callLater(() => pille.forceActiveFocus()); }   // opened -> read; tray menu closes; modal modes hold open; power grabs focus for q/w/e/r/t
             property bool holdOpen: false   // a tray menu is open -> don't auto-collapse the hub
@@ -428,7 +428,10 @@ ShellRoot {
             readonly property var menuEntries: (cfg.actions || []).map(a => ({ label: a.label }))
             function runAction(label) {
                 const a = cfg.actions || [];
-                for (let i = 0; i < a.length; i++) if (a[i].label === label) { Quickshell.execDetached(["sh", "-c", a[i].cmd]); break; }
+                for (let i = 0; i < a.length; i++) if (a[i].label === label) {
+                    if (a[i].panel) { win.hubActive = a[i].panel; win.expandLevel = 1; return; }  // open a hub panel instead of a command
+                    Quickshell.execDetached(["sh", "-c", a[i].cmd]); break;
+                }
                 win.expandLevel = 0;
             }
             Timer { id: expandDelay; interval: 40; onTriggered: win.expandLevel = 1 }   // snappy expand (tiny delay avoids triggering on a quick mouse pass)
@@ -622,6 +625,7 @@ ShellRoot {
                                            : win.hubActive === "menu" ? menuPanelComp
                                            : win.hubActive === "wallpapers" ? wallpaperPanelComp
                                            : win.hubActive === "themes" ? themePanelComp
+                                           : win.hubActive === "weather" ? weatherPanelComp
                                            : comingSoonComp
                         }
                     }
@@ -654,6 +658,7 @@ ShellRoot {
                     Component { id: menuPanelComp; DmenuPanel { skin: pal; entries: win.menuEntries; prompt: "Menu"; searchable: false; maxResults: cfg.dmenuMaxResults; plainW: cfg.menuWidth; onChosen: (label) => win.runAction(label); onCancelled: win.expandLevel = 0 } }
                     Component { id: wallpaperPanelComp; WallpaperPanel { skin: pal; entries: win.wpEntries; onChosen: (path) => win.finishWallpapers(path); onCancelled: win.finishWallpapers("") } }
                     Component { id: themePanelComp; ThemePickerPanel { skin: pal; entries: win.thEntries; onChosen: (dir) => win.finishThemes(dir); onCancelled: win.finishThemes("") } }
+                    Component { id: weatherPanelComp; WeatherPanel { skin: pal; appcfg: cfg } }
                     Component {
                         id: comingSoonComp
                         Text {

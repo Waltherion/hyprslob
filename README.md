@@ -72,6 +72,12 @@ into that panel - one cohesive surface, never loose floating widgets.
 - **Power** - lock, sleep/hibernate, log out, restart, shut down (all configurable commands).
   Bind a key (e.g. `Super+Escape`) to the `power` IPC to open it as a quick power menu;
   `q`/`w`/`e`/`r`/`t` trigger the five actions.
+- **Weather** - a 5-day forecast (today large with current conditions + wind/humidity/precip and
+  sunrise/sunset, then four compact days), theme-coloured like everything else. Data is from
+  [Open-Meteo](https://open-meteo.com) (free, **no API key**); settings live in a separate
+  `~/.config/hyprslob/weather.jsonc` (location, units, model - see `weather.default.jsonc`, Danish
+  defaults). It has no hub button by default: open it from the **Menu** with an action
+  `{ "label": "Weather", "panel": "weather" }`, or bind a key to `select weather`.
 
 <table align="center">
   <tr>

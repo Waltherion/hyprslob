@@ -1,0 +1,26 @@
+// HyprSlob weather module. Copy to ~/.config/hyprslob/weather.jsonc and edit.
+// Data comes from Open-Meteo (free, no API key). JSONC: // and /* */ comments are allowed.
+// Limitation: no `//` inside string values (use single-slash paths).
+//
+// Open the panel from the menu button (add {"label":"Weather","panel":"weather"} to "actions"
+// in config.jsonc) or bind a key to:  qs -c hyprslob ipc call hyprslob select weather
+{
+  // ---- Location ----
+  // Set BOTH latitude and longitude to pin an exact spot (unambiguous, wins over "location").
+  // "latitude": 56.17,
+  // "longitude": 9.55,
+
+  // Otherwise this place name is geocoded. "country" (ISO code) disambiguates duplicate names.
+  "location": "Copenhagen",
+  "country": "DK",
+
+  // ---- Units (Danish defaults) ----
+  // "units": "metric",       // "metric" = Celsius + mm  |  "imperial" = Fahrenheit + inch
+  // "windUnit": "ms",        // "ms" | "kmh" | "mph" | "kn"
+  // "hourFormat": 24,        // 24 | 12  - sunrise/sunset clock
+
+  // ---- Data source ----
+  // "model": "best_match",   // best_match auto-picks the best regional model (DMI / MET-Norway near DK).
+  //                          // Pin one: "dmi_harmonie_arome_europe" | "metno_nordic" | "ecmwf_ifs025" | ...
+  // "refreshMinutes": 30     // how often to refetch while the panel is open
+}
