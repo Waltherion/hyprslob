@@ -72,6 +72,7 @@
   // "menuWidth": 420,          // the menu-button action-palette width
   // "actions": [               // menu-button entries: run a command ("cmd") OR open a panel ("panel")
   //   { "label": "Weather",      "panel": "weather" },                                  // built-in weather panel (see weather.jsonc)
+  //   { "label": "Calendar",     "panel": "calendar" },                                 // built-in calendar panel (see calendar.jsonc)
   //   { "label": "Switch theme", "cmd": "$HOME/.config/hypr/scripts/theme-pick.sh" },
   //   { "label": "Screenshot",   "cmd": "$HOME/.config/hypr/scripts/screenshot.sh" }
   // ]

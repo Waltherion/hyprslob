@@ -1,0 +1,19 @@
+// HyprSlob calendar module. Copy to ~/.config/hyprslob/calendar.jsonc and edit.
+// For now events are hand-written here (dummy); this is the file a future Outlook/Betterbird sync
+// would populate. JSONC: // and /* */ comments are allowed (no // inside string values).
+//
+// Open the panel from the menu button (add {"label":"Calendar","panel":"calendar"} to "actions"
+// in config.jsonc) or bind a key to:  qs -c hyprslob ipc call hyprslob select calendar
+{
+  // ---- Settings (Danish defaults) ----
+  // "weekStart": "monday",       // "monday" | "sunday" - which day the grid starts on
+  // "showWeekNumbers": true,     // show the ISO week-number column
+  // "dateFormat": "dd-mm-yyyy",  // selected day's date (tokens: dd, mm, yyyy)
+
+  // ---- Events (dummy for now) ----
+  // Each: date (yyyy-mm-dd), time (optional, "HH:MM"), title. Days with events show a dot.
+  "events": [
+    // { "date": "2026-07-16", "time": "14:00", "title": "Dentist" },
+    // { "date": "2026-07-18", "time": "19:30", "title": "Dinner with friends" }
+  ]
+}

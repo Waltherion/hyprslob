@@ -102,6 +102,21 @@ Item {
     readonly property int    weatherRefreshMinutes: (typeof weather.refreshMinutes === "number" && weather.refreshMinutes > 0) ? weather.refreshMinutes : 30
     readonly property int    weatherHourFormat: (weather.hourFormat === 12) ? 12 : 24
 
+    // ---- Calendar module (separate ~/.config/hyprslob/calendar.jsonc, live-watched) ----
+    // Settings + (for now) dummy events; this is the file a future Outlook/Betterbird sync writes to.
+    readonly property var calendarDefaults: ({
+        "weekStart": "monday",        // "monday" | "sunday" - which day the grid starts on
+        "showWeekNumbers": true,      // show the ISO week number column
+        "dateFormat": "dd-mm-yyyy",   // how the selected day's date reads (tokens dd/mm/yyyy)
+        "events": []                  // [{ "date": "2026-07-16", "time": "14:00", "title": "..." }]
+    })
+    property var calendarObj: ({})    // parsed calendar.jsonc (keeps last-good on parse error)
+    readonly property var calendar: cfg._merge(cfg.calendarDefaults, cfg.calendarObj)
+    readonly property string calWeekStart: (calendar.weekStart === "sunday") ? "sunday" : "monday"
+    readonly property bool   calShowWeekNumbers: calendar.showWeekNumbers !== false
+    readonly property string calDateFormat: calendar.dateFormat || "dd-mm-yyyy"
+    readonly property var    calEvents: Array.isArray(calendar.events) ? calendar.events : []
+
     function _stripJsonc(s) {
         // remove /* */ blocks, then // line comments (not `://`/after quote),
         // finally trailing commas (,} and ,]) -> proper JSONC; safe to comment lines out
@@ -172,5 +187,15 @@ Item {
         onLoaded: { var o = cfg._parseJsonc(weatherView.text()); if (o !== null) cfg.weatherObj = o; }
         onFileChanged: reload()
         onLoadFailed: (err) => cfg.weatherObj = ({})
+    }
+
+    // Calendar module config + events - separate fixed-path file, live-watched.
+    FileView {
+        id: calendarView
+        path: Quickshell.env("HOME") + "/.config/hyprslob/calendar.jsonc"
+        watchChanges: true
+        onLoaded: { var o = cfg._parseJsonc(calendarView.text()); if (o !== null) cfg.calendarObj = o; }
+        onFileChanged: reload()
+        onLoadFailed: (err) => cfg.calendarObj = ({})
     }
 }

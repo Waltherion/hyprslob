@@ -78,6 +78,11 @@ into that panel - one cohesive surface, never loose floating widgets.
   `~/.config/hyprslob/weather.jsonc` (location, units, model - see `weather.default.jsonc`, Danish
   defaults). It has no hub button by default: open it from the **Menu** with an action
   `{ "label": "Weather", "panel": "weather" }`, or bind a key to `select weather`.
+- **Calendar** - a month grid (ISO week numbers, Monday-start, today ringed, a dot on days with
+  events) plus the selected day's events, theme-coloured. Settings + events live in a separate
+  `~/.config/hyprslob/calendar.jsonc` (`weekStart`, `showWeekNumbers`, `dateFormat`, and an `events`
+  list - hand-written for now, ready for a future sync). Open it from the **Menu** with an action
+  `{ "label": "Calendar", "panel": "calendar" }`, or bind a key to `select calendar`.
 
 <table align="center">
   <tr>

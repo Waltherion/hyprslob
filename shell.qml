@@ -306,7 +306,7 @@ ShellRoot {
             property int expandLevel: 0
             property string hubActive: ""
             // dmenu/menu/launcher are "modal" input modes - they don't auto-collapse on hover-leave.
-            readonly property bool modalMode: hubActive === "dmenu" || hubActive === "menu" || hubActive === "launcher" || hubActive === "wallpapers" || hubActive === "themes" || hubActive === "weather"
+            readonly property bool modalMode: hubActive === "dmenu" || hubActive === "menu" || hubActive === "launcher" || hubActive === "wallpapers" || hubActive === "themes" || hubActive === "weather" || hubActive === "calendar" || hubActive === "datetime"
             onExpandLevelChanged: { if (win.expandLevel === 0) { win.hubActive = ""; trayMenu.close(); } }
             onHubActiveChanged: { if (win.hubActive === "notif") root.unread = 0; trayMenu.close(); win.holdOpen = win.modalMode; if (win.hubActive === "power") Qt.callLater(() => pille.forceActiveFocus()); }   // opened -> read; tray menu closes; modal modes hold open; power grabs focus for q/w/e/r/t
             property bool holdOpen: false   // a tray menu is open -> don't auto-collapse the hub
@@ -564,7 +564,13 @@ ShellRoot {
                 MouseArea {
                     anchors.fill: parent
                     enabled: win.hubActive !== "" && !trayMenu.visible
-                    onClicked: win.expandLevel = 0
+                    onClicked: (mouse) => {
+                        // clicks on the pill/panel pass through its empty areas down to here (the box
+                        // itself doesn't grab clicks) - ignore those, collapse only on a click OUTSIDE it
+                        var p = mapToItem(clockBox, mouse.x, mouse.y);
+                        if (p.x >= 0 && p.y >= 0 && p.x < clockBox.width && p.y < clockBox.height) return;
+                        win.expandLevel = 0;
+                    }
                 }
 
                 // ---- Box behind the pill ----
@@ -639,6 +645,8 @@ ShellRoot {
                                            : win.hubActive === "wallpapers" ? wallpaperPanelComp
                                            : win.hubActive === "themes" ? themePanelComp
                                            : win.hubActive === "weather" ? weatherPanelComp
+                                           : win.hubActive === "calendar" ? calendarPanelComp
+                                           : win.hubActive === "datetime" ? dateTimePanelComp
                                            : comingSoonComp
                         }
                     }
@@ -672,6 +680,8 @@ ShellRoot {
                     Component { id: wallpaperPanelComp; WallpaperPanel { skin: pal; entries: win.wpEntries; onChosen: (path) => win.finishWallpapers(path); onCancelled: win.finishWallpapers("") } }
                     Component { id: themePanelComp; ThemePickerPanel { skin: pal; entries: win.thEntries; onChosen: (dir) => win.finishThemes(dir); onCancelled: win.finishThemes("") } }
                     Component { id: weatherPanelComp; WeatherPanel { skin: pal; appcfg: cfg } }
+                    Component { id: calendarPanelComp; CalendarPanel { skin: pal; appcfg: cfg } }
+                    Component { id: dateTimePanelComp; DateTimePanel { skin: pal; appcfg: cfg } }
                     Component {
                         id: comingSoonComp
                         Text {
@@ -848,6 +858,13 @@ ShellRoot {
                         id: dateSlot
                         width: clockRow.fieldW; height: dayText.implicitHeight
                         readonly property bool wsHere: cfg.wsSide === "date"
+                        // Click the date -> the combined weather + calendar panel (toggle).
+                        TapHandler {
+                            onTapped: {
+                                win.hubActive = (win.hubActive === "datetime" ? "" : "datetime");
+                                win.expandLevel = win.hubActive === "datetime" ? 1 : 0;
+                            }
+                        }
                         RainbowLabel { id: dateText; anchors.centerIn: parent; content: root.dateStr; family: win.fam; pixelSize: win.sz; fontWeight: win.wt; features: win.feat; stops: pal.stops; phase: root.rainbowPhase; period: win.rbPeriod; rainbow: pal.isRainbow("text"); solid: pal.text
                             opacity: dateSlot.wsHere ? (1 - win.wsShown) : 1 }
                         WorkspaceDots {
