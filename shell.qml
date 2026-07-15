@@ -253,9 +253,10 @@ ShellRoot {
             visible: root.barVisible && !win.monitorFullscreen   // hide in fullscreen (like waybar)
             color: "transparent"
             // Normally only the box captures input (the rest passes through). While a tray menu is
-            // open, drop the mask so the whole (now full-height) window takes input - that's what
-            // lets the menu, which extends past the bar, receive clicks (popups don't here).
-            mask: trayMenu.visible ? null : boxMask
+            // open OR a hub panel is expanded, drop the mask so the whole (full-height) window takes
+            // input - that lets the tray menu (which extends past the bar) receive clicks, and lets
+            // the click-away scrim (below) collapse the hub on a click anywhere outside the pill.
+            mask: (trayMenu.visible || win.hubActive !== "") ? null : boxMask
             Region { id: boxMask; item: clockBox }
 
             // Full-bar themes (neon, no waybar) reserve ONLY the base height (exclusiveZone, constant);
@@ -552,6 +553,18 @@ ShellRoot {
                     else if (event.key === Qt.Key_R) i = 3;
                     else if (event.key === Qt.Key_T) i = 4;
                     if (i >= 0) { l2.item.activate(i); event.accepted = true; }
+                }
+
+                // ---- Click-away scrim ----
+                // While a hub panel is open, a click anywhere OUTSIDE the pill collapses the hub
+                // (no more hovering the bar to dismiss it). Sits UNDER the box, so clicks on the
+                // pill/panel still reach them; only the empty area around them collapses. The input
+                // mask is dropped for hubActive != "" (above) so this receives those clicks. Skipped
+                // while a tray menu is up - that handles its own dismissal.
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: win.hubActive !== "" && !trayMenu.visible
+                    onClicked: win.expandLevel = 0
                 }
 
                 // ---- Box behind the pill ----
